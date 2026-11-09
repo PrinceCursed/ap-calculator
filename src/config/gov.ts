@@ -16,7 +16,7 @@ export const gov: FactionGroup = {
     { id: 'lspd', name: 'LSPD', aliases: ['Los Santos Police Department', 'Полиция ЛС'] },
     { id: 'lssd', name: 'LSSD', aliases: ['Los Santos Sheriff', 'Los Santos Sheriff Department', "Los Santos County Sheriff's Department", 'Шериф'] },
     { id: 'fib', name: 'FIB', aliases: ['ФИБ'] },
-    { id: 'army', name: 'LS Army', aliases: ['National Guard', 'NG', 'Army', 'Армия', 'Армия ЛС'] },
+    { id: 'army', name: 'LS Army', short: 'National Guard', aliases: ['National Guard', 'NG', 'Army', 'Армия', 'Армия ЛС'] },
     { id: 'saspa', name: 'Федеральная тюрьма', aliases: ['San Andreas State Prison Authority', 'SASPA', 'Federal Prison', 'Тюрьма'] },
     { id: 'wn', name: 'Weazel News', aliases: ['WN', 'Weazel'] },
     { id: 'gov', name: 'Мэрия ЛС', aliases: ['Government', 'Мэрия', 'Правительство'] },

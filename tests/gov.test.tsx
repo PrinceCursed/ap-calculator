@@ -24,12 +24,14 @@ describe('Группа «Гос» заблокирована (enabled: false)', 
     const onFaction = vi.fn();
     render(<FactionPicker groups={GROUPS} groupId="gov" factionId={null} onGroup={() => {}} onFaction={onFaction} />);
     expect(screen.getByText('Скоро')).toBeTruthy();
-    expect(screen.getByText('Правила для гос. структур ещё не добавлены')).toBeTruthy();
     for (const f of gov.factions) {
       const btn = screen.getByTestId(`faction-${f.id}`) as HTMLButtonElement;
-      expect(btn.disabled).toBe(true);
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
       fireEvent.click(btn);
     }
+    // подсказка при наведении
+    fireEvent.mouseEnter(screen.getByTestId('faction-lspd'));
+    expect(screen.getByRole('tooltip').textContent).toBe('Правила для гос. структур ещё не добавлены');
     expect(onFaction).not.toHaveBeenCalled();
   });
 

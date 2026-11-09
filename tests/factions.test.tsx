@@ -36,8 +36,8 @@ describe('Алиасы фракций', () => {
 });
 
 describe('Логотипы', () => {
-  it('для каждой фракции есть public/factions/<slug>.webp', () => {
-    for (const f of all) expect(existsSync(resolvePath(process.cwd(), `public/factions/${f.logo ?? f.id}.webp`)), f.id).toBe(true);
+  it('для каждой фракции есть public/factions/<slug>.svg', () => {
+    for (const f of all) expect(existsSync(resolvePath(process.cwd(), `public/factions/${f.logo ?? f.id}.svg`)), f.id).toBe(true);
   });
 
   it('монограммы', () => {

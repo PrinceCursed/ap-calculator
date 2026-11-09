@@ -1,67 +1,91 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Calendar, ChevronDown, FileText, FileX, Moon, Sun, Upload } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { findFaction, GROUPS, isFactionSelectable } from './config';
 import type { ManualRule } from './config/types';
 import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
 import { FactionLogo } from './components/FactionLogo';
 import { FactionPicker } from './components/FactionPicker';
-import { AchievementsTable, DisputedList, ManualPanel, Summary } from './components/Results';
-import { FileIcon, LockIcon, MoonIcon, ShieldIcon, SunIcon, UploadIcon } from './components/icons';
+import {
+  AchievementsTable,
+  DisputedTable,
+  formatBytes,
+  ManualGrid,
+  ResultTabs,
+  Summary,
+  type ResultTab,
+} from './components/Results';
 
 type Theme = 'light' | 'dark';
 type Status = 'idle' | 'loading' | 'ready' | 'error';
+const ICON = { size: 16, strokeWidth: 1.5 } as const;
+const fmt = (n: number) => n.toLocaleString('ru-RU');
 
-const PHASE: Record<string, string> = { read: 'Чтение файла', parse: 'Разбор строк', compute: 'Расчёт достижений' };
+function readStore(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeStore(key: string, v: string) {
+  try {
+    localStorage.setItem(key, v);
+  } catch {
+    /* localStorage недоступен — не страшно */
+  }
+}
 
 function initialTheme(): Theme {
-  try {
-    const t = localStorage.getItem('ap-theme');
-    if (t === 'light' || t === 'dark') return t;
-  } catch {
-    /* localStorage недоступен */
-  }
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const t = readStore('ap-theme');
+  return t === 'light' || t === 'dark' ? t : 'dark'; // в макете по умолчанию тёмная
+}
+
+function initialFaction(): string {
+  const f = readStore('ap-faction');
+  if (f && isFactionSelectable(f)) return f;
+  return GROUPS.find((g) => g.enabled)!.factions[0].id;
+}
+
+function createWorker() {
+  return new Worker(new URL('./worker/apWorker.ts', import.meta.url), { type: 'module' });
 }
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(initialTheme);
-  const [groupId, setGroupId] = useState(GROUPS[0].id);
-  const [factionId, setFactionId] = useState<string | null>(null);
+  const [factionId, setFactionId] = useState<string>(initialFaction);
+  const [groupId, setGroupId] = useState(() => findFaction(factionId)!.group.id);
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
-  const [progress, setProgress] = useState<{ phase: string; pct: number }>({ phase: 'read', pct: 0 });
+  const [progress, setProgress] = useState({ phase: 'read', done: 0, total: 0 });
+  const [pending, setPending] = useState<{ names: string[]; bytes: number } | null>(null);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [info, setInfo] = useState<LoadInfo | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [ms, setMs] = useState(0);
+  const [tab, setTab] = useState<ResultTab>('ach');
   const [manual, setManual] = useState<Record<string, number>>({});
   const [adjust, setAdjust] = useState(0);
   const [drag, setDrag] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem('ap-theme', theme);
-    } catch {
-      /* ignore */
-    }
+    writeStore('ap-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    const w = new Worker(new URL('./worker/apWorker.ts', import.meta.url), { type: 'module' });
+  const attach = (w: Worker) => {
     w.onmessage = (e: MessageEvent<FromWorker>) => {
       const m = e.data;
       if (m.type === 'progress') {
         setStatus('loading');
-        setProgress({ phase: m.phase, pct: m.total ? Math.round((m.done / m.total) * 100) : 0 });
+        setProgress({ phase: m.phase, done: m.done, total: m.total });
       } else if (m.type === 'loaded') {
         setInfo(m.info);
       } else if (m.type === 'result') {
         setAnalysis(m.analysis);
         setDate(m.analysis.date);
-        setMs(m.ms);
         setError(null);
         setStatus('ready');
       } else if (m.type === 'error') {
@@ -70,14 +94,19 @@ export default function App() {
       }
     };
     workerRef.current = w;
+  };
+
+  useEffect(() => {
+    const w = createWorker();
+    attach(w);
     return () => w.terminate();
   }, []);
 
   const send = (m: ToWorker) => workerRef.current?.postMessage(m);
 
-  const group = GROUPS.find((g) => g.id === groupId)!;
-  const faction = factionId ? findFaction(factionId)?.faction : undefined;
-  const activeGroup = factionId ? findFaction(factionId)!.group : group;
+  const found = findFaction(factionId)!;
+  const faction = found.faction;
+  const activeGroup = found.group;
   const manualRules = useMemo(() => activeGroup.rules.filter((r): r is ManualRule => r.type === 'manual'), [activeGroup]);
 
   const resetManual = () => {
@@ -88,263 +117,258 @@ export default function App() {
   const chooseFaction = (id: string) => {
     if (!isFactionSelectable(id)) return;
     setFactionId(id);
+    writeStore('ap-faction', id);
+    setMenuOpen(false);
     resetManual();
-    if (info) send({ type: 'analyze', factionId: id, date });
+    if (info && status !== 'loading' && error?.code !== 'not-logs') send({ type: 'analyze', factionId: id, date });
   };
 
-  const chooseDate = (d: string | null) => {
+  const chooseDate = (d: string) => {
     setDate(d);
     resetManual();
-    if (info && factionId) send({ type: 'analyze', factionId, date: d });
+    if (info) send({ type: 'analyze', factionId, date: d });
   };
 
-  const loadFiles = useCallback(
-    (list: FileList | File[] | null) => {
-      const files = Array.from(list ?? []);
-      if (!files.length || !factionId || !isFactionSelectable(factionId)) return;
-      setStatus('loading');
-      setProgress({ phase: 'read', pct: 0 });
-      setAnalysis(null);
-      setError(null);
-      resetManual();
-      send({ type: 'load', files, factionId, date: null });
-    },
-    [factionId],
-  );
+  const loadFiles = (list: FileList | File[] | null) => {
+    const files = Array.from(list ?? []);
+    if (!files.length || !isFactionSelectable(factionId)) return;
+    setPending({ names: files.map((f) => f.name), bytes: files.reduce((s, f) => s + f.size, 0) });
+    setStatus('loading');
+    setProgress({ phase: 'read', done: 0, total: 0 });
+    setAnalysis(null);
+    setInfo(null);
+    setError(null);
+    setTab('ach');
+    resetManual();
+    send({ type: 'load', files, factionId, date: null });
+  };
 
+  const cancel = () => {
+    workerRef.current?.terminate();
+    attach(createWorker());
+    setStatus('idle');
+    setPending(null);
+    setInfo(null);
+    setAnalysis(null);
+  };
+
+  const pick = () => inputRef.current?.click();
   const manualSum = manualRules.reduce((s, r) => s + (manual[r.id] ?? 0) * r.points, 0);
-  const canUpload = !!factionId && group.enabled && status !== 'loading';
   const result = analysis?.result;
+  const fileLabel = (info?.files ?? pending?.names ?? []).join(', ');
+  const fileBytes = info?.bytes ?? pending?.bytes ?? 0;
+  const pct = progress.phase === 'compute' ? 100 : progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
 
-  let main: React.ReactNode;
-  if (!group.enabled) {
-    main = (
-      <div className="state state-locked">
-        <LockIcon />
-        <h2>Группа «{group.title}» скоро появится</h2>
-        <p>{group.disabledHint}</p>
-        <span className="badge badge-soon">Скоро</span>
-      </div>
-    );
-  } else if (status === 'loading') {
-    main = (
-      <div className="state">
-        <h2>{PHASE[progress.phase] ?? 'Обработка'}…</h2>
-        <div className="progress" role="progressbar" aria-valuenow={progress.pct} aria-valuemin={0} aria-valuemax={100}>
-          <div className="progress-fill" style={{ width: `${progress.phase === 'compute' ? 100 : progress.pct}%` }} />
+  let body: React.ReactNode;
+  if (status === 'loading') {
+    body = (
+      <div className="panel panel-pad loading">
+        <div className="loading-head">
+          <div className="loading-file">
+            <span className="mono">{fileLabel || 'Файл'}</span>
+            <span className="small muted">{formatBytes(fileBytes)}</span>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={cancel}>
+            Отменить
+          </button>
         </div>
-        <p className="muted">{progress.phase === 'compute' ? 'Почти готово' : `${progress.pct}%`}</p>
-      </div>
-    );
-  } else if (status === 'error' && error?.code === 'not-logs') {
-    main = (
-      <div className="state state-warn">
-        <h2>Файл не похож на логи</h2>
-        <p className="muted">
-          Не найдено ни одной строки формата «ID · Ник [статик] · Фракция · Событие · ДД.ММ.ГГГГ, ЧЧ:ММ:СС».
-          {info ? ` Строк в файле: ${info.total}, все пропущены.` : ''}
-        </p>
+        <div className="bar">
+          <div className="bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="loading-foot small muted">
+          <span>
+            {progress.phase === 'read'
+              ? 'Чтение файла…'
+              : progress.phase === 'compute'
+                ? 'Расчёт достижений…'
+                : `Обработано ${fmt(progress.done)} из ${fmt(progress.total)} строк`}
+          </span>
+          <span className="mono strong-tx">{pct}%</span>
+        </div>
       </div>
     );
   } else if (status === 'error') {
-    main = (
-      <div className="state state-warn">
-        <h2>Ошибка обработки</h2>
-        <p className="muted">{error?.message}</p>
+    body = (
+      <div className="panel panel-pad state-card">
+        <div className="state-row">
+          <FileX size={24} strokeWidth={1.5} className="muted" aria-hidden />
+          <div>
+            <div className="state-title">{error?.code === 'not-logs' ? 'Файл не похож на логи' : 'Ошибка обработки'}</div>
+            <div className="muted">
+              {error?.code === 'not-logs'
+                ? `Не найдено ни одной строки нужного формата${info ? ` (строк в файле: ${fmt(info.total)})` : ''}`
+                : error?.message}
+            </div>
+          </div>
+        </div>
+        <button className="btn btn-outline" onClick={pick}>
+          Выбрать другой файл
+        </button>
       </div>
     );
-  } else if (!factionId) {
-    main = (
-      <div className="state">
-        <h2>Выберите фракцию</h2>
-        <p className="muted">Затем загрузите .txt-логи фракции — расчёт идёт прямо в браузере.</p>
+  } else if (analysis && !result) {
+    body = (
+      <div className="panel panel-pad state-card">
+        <div>
+          <div className="state-title">За выбранную дату для этой фракции строк нет</div>
+          <div className="muted">
+            {analysis.factionLines ? 'Проверьте дату и фракцию.' : `В логах нет строк фракции «${faction.name}». Проверьте фракцию.`}
+          </div>
+        </div>
+        <div className="small fade">
+          Проигнорировано строк других фракций и дат: {fmt(analysis.ignoredOtherFaction + analysis.ignoredOtherDate)}
+        </div>
       </div>
     );
-  } else if (!analysis) {
-    main = (
-      <div className="state">
-        <UploadIcon />
-        <h2>Загрузите логи «{faction?.name}»</h2>
-        <p className="muted">Перетащите один или несколько .txt-файлов в область слева или нажмите «Выбрать файлы».</p>
-      </div>
-    );
-  } else if (!result) {
-    main = (
-      <div className="state state-warn">
-        <h2>Для этой фракции и даты строк нет</h2>
-        <p className="muted">
-          {analysis.factionLines
-            ? `У «${faction?.name}» есть строки за другие даты — выберите дату слева.`
-            : `В загруженных логах нет строк фракции «${faction?.name}». Проигнорировано строк других фракций: ${analysis.ignoredOtherFaction}.`}
-        </p>
+  } else if (analysis && result && info) {
+    body = (
+      <div className="result">
+        <Summary
+          auto={result.autoSum}
+          manual={manualSum}
+          adjust={adjust}
+          cap={activeGroup.dailyCap}
+          date={analysis.date!}
+          fileName={fileLabel}
+          fileSize={info.bytes}
+          lines={info.total}
+        />
+        <div className="result-tabs">
+          <ResultTabs tab={tab} onTab={setTab} disputed={result.disputed.length} />
+          {tab === 'ach' && <AchievementsTable items={result.achievements} />}
+          {tab === 'disp' && <DisputedTable items={result.disputed} />}
+          {tab === 'man' && (
+            <ManualGrid
+              rules={manualRules}
+              counts={manual}
+              adjust={adjust}
+              onCount={(id, n) => setManual((m) => ({ ...m, [id]: n }))}
+              onAdjust={setAdjust}
+            />
+          )}
+          <div className="small fade footnote">
+            Проигнорировано строк других фракций и дат: {fmt(analysis.ignoredOtherFaction + analysis.ignoredOtherDate)}
+            {' · '}других фракций {fmt(analysis.ignoredOtherFaction)}, других дат {fmt(analysis.ignoredOtherDate)}
+            {' · '}пропущено нераспознанных строк: {fmt(info.skipped)}
+            {info.duplicates ? ` · дубликатов: ${fmt(info.duplicates)}` : ''}
+          </div>
+        </div>
       </div>
     );
   } else {
-    main = (
-      <>
-        <Summary auto={result.autoSum} manual={manualSum} adjust={adjust} cap={activeGroup.dailyCap} />
-        <AchievementsTable items={result.achievements} />
-        <DisputedList items={result.disputed} />
-        <ManualPanel
-          rules={manualRules}
-          counts={manual}
-          adjust={adjust}
-          onCount={(id, n) => setManual((m) => ({ ...m, [id]: n }))}
-          onAdjust={setAdjust}
-        />
-      </>
+    body = (
+      <button className={`dropzone ${drag ? 'is-drag' : ''}`} onClick={pick} type="button">
+        <span className="dz-icon">
+          <FileText size={26} strokeWidth={1.5} aria-hidden />
+        </span>
+        <span className="dz-title">Перетащите .txt-файл с логами</span>
+        <span className="small muted">Файл обрабатывается в браузере и никуда не отправляется</span>
+      </button>
     );
   }
 
+  const ThemeIcon = theme === 'dark' ? Moon : Sun;
+
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="logo">AP</span>
-          <div>
-            <div className="brand-title">AP Calculator</div>
-            <div className="brand-sub">GTA 5 RP · Activity Points фракций</div>
+    <div className="shell">
+      <aside className={`side ${menuOpen ? 'menu-open' : ''}`}>
+        <div className="brand-row">
+          <div className="brand">
+            <span className="brand-mark">AP</span>AP Calculator
           </div>
-        </div>
-        <div className="topbar-right">
-          <span className="chip" title="Файлы обрабатываются локально в вашем браузере и никуда не отправляются">
-            <ShieldIcon /> Логи не покидают браузер
-          </span>
           <button
-            className="icon-btn"
+            className="icon-btn only-mob-flex"
+            aria-label="Переключить тему"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-            title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
           >
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            <ThemeIcon {...ICON} />
           </button>
         </div>
-      </header>
 
-      <div className="layout">
-        <aside className="sidebar">
-          <section className="card">
-            <div className="step-title">
-              <span className="step-no">1</span> Фракция
-            </div>
-            <FactionPicker groups={GROUPS} groupId={groupId} factionId={factionId} onGroup={setGroupId} onFaction={chooseFaction} />
-          </section>
+        <button className="menu-btn only-mob-flex" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>
+          <FactionLogo key={faction.id} faction={faction} size={28} />
+          <span className="grow">{faction.short ?? faction.name}</span>
+          <ChevronDown {...ICON} className="muted" aria-hidden />
+        </button>
 
-          <section className={`card ${!group.enabled ? 'is-disabled' : ''}`}>
-            <div className="step-title">
-              <span className="step-no">2</span> Логи
-            </div>
-            <div
-              className={`dropzone ${drag ? 'is-drag' : ''} ${canUpload ? '' : 'is-disabled'}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (canUpload) setDrag(true);
-              }}
-              onDragLeave={() => setDrag(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDrag(false);
-                if (canUpload) loadFiles(e.dataTransfer.files);
-              }}
-              onClick={() => canUpload && inputRef.current?.click()}
-              role="button"
-              tabIndex={canUpload ? 0 : -1}
-              aria-disabled={!canUpload}
-              onKeyDown={(e) => canUpload && (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
-            >
-              <UploadIcon />
-              <div>
-                <b>{canUpload ? 'Выбрать файлы' : !group.enabled ? 'Недоступно' : factionId ? 'Обработка…' : 'Сначала выберите фракцию'}</b>
-                <div className="muted small">.txt, можно несколько, до десятков тысяч строк</div>
-              </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".txt,.log,text/plain"
-                multiple
-                hidden
-                onChange={(e) => {
-                  loadFiles(e.target.files);
-                  e.target.value = '';
-                }}
-              />
-            </div>
-            {info && (
-              <div className="files">
-                {info.files.map((f, i) => (
-                  <div key={i} className="file-row">
-                    <FileIcon /> {f}
-                  </div>
+        <div className="side-list">
+          <FactionPicker
+            groups={GROUPS}
+            groupId={groupId}
+            factionId={factionId}
+            onGroup={setGroupId}
+            onFaction={chooseFaction}
+            badges={analysis?.badges}
+          />
+        </div>
+
+        <div className="side-foot only-desk-flex">
+          <div className="seg seg-2" role="group" aria-label="Тема">
+            <button className={theme === 'dark' ? 'is-on' : ''} onClick={() => setTheme('dark')} aria-pressed={theme === 'dark'}>
+              <Moon size={14} strokeWidth={1.5} aria-hidden />
+              Тёмная
+            </button>
+            <button className={theme === 'light' ? 'is-on' : ''} onClick={() => setTheme('light')} aria-pressed={theme === 'light'}>
+              <Sun size={14} strokeWidth={1.5} aria-hidden />
+              Светлая
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main
+        className="main"
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (status !== 'loading') setDrag(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrag(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDrag(false);
+          if (status !== 'loading') loadFiles(e.dataTransfer.files);
+        }}
+      >
+        <header className="head">
+          <FactionLogo key={faction.id} faction={faction} size={52} />
+          <div className="head-title">
+            <div className="kicker kicker-mut">РАСЧЁТ ACTIVITY POINTS</div>
+            <h1>{faction.name}</h1>
+          </div>
+          <label className={`date-pill ${analysis?.date ? '' : 'is-empty'}`}>
+            <Calendar {...ICON} aria-hidden className="muted" />
+            {analysis?.dates.length ? (
+              <select value={date ?? ''} onChange={(e) => chooseDate(e.target.value)} aria-label="Дата" disabled={status === 'loading'}>
+                {analysis.dates.map((d) => (
+                  <option key={d.date} value={d.date}>
+                    {d.date} · {fmt(d.count)} строк
+                  </option>
                 ))}
-              </div>
+              </select>
+            ) : (
+              <span>Определится из логов</span>
             )}
-          </section>
-
-          <section className={`card ${!info || !group.enabled ? 'is-disabled' : ''}`}>
-            <div className="step-title">
-              <span className="step-no">3</span> Дата
-            </div>
-            <select
-              className="select"
-              value={date ?? ''}
-              disabled={!analysis?.dates.length || status === 'loading'}
-              onChange={(e) => chooseDate(e.target.value || null)}
-              aria-label="Дата"
-            >
-              {!analysis?.dates.length && <option value="">Авто — самая частая в файле</option>}
-              {analysis?.dates.map((d) => (
-                <option key={d.date} value={d.date}>
-                  {d.date} — {d.count} строк
-                </option>
-              ))}
-            </select>
-            <div className="muted small">Календарные сутки 00:00–23:59:59. По умолчанию — самая частая дата.</div>
-          </section>
-
-          {info && (
-            <section className="card stats">
-              <div className="step-title">Статистика</div>
-              <dl>
-                <dt>Строк в файлах</dt>
-                <dd>{info.total.toLocaleString('ru-RU')}</dd>
-                <dt>Разобрано</dt>
-                <dd>{info.parsed.toLocaleString('ru-RU')}</dd>
-                <dt>Пропущено (мусор)</dt>
-                <dd>{info.skipped.toLocaleString('ru-RU')}</dd>
-                {info.duplicates > 0 && (
-                  <>
-                    <dt>Дубликаты</dt>
-                    <dd>{info.duplicates.toLocaleString('ru-RU')}</dd>
-                  </>
-                )}
-                {analysis && (
-                  <>
-                    <dt>Других фракций</dt>
-                    <dd>{analysis.ignoredOtherFaction.toLocaleString('ru-RU')}</dd>
-                    <dt>Других дат</dt>
-                    <dd>{analysis.ignoredOtherDate.toLocaleString('ru-RU')}</dd>
-                    <dt>За выбранный день</dt>
-                    <dd>{analysis.dayLines.toLocaleString('ru-RU')}</dd>
-                    <dt>Время расчёта</dt>
-                    <dd>{ms} мс</dd>
-                  </>
-                )}
-              </dl>
-            </section>
-          )}
-        </aside>
-
-        <main className="content">
-          {analysis?.date && result && group.enabled && (
-            <div className="content-head">
-              {faction && <FactionLogo key={faction.id} faction={faction} size={36} />}
-              <h1>{faction?.name}</h1>
-              <span className="muted">{analysis.date}</span>
-            </div>
-          )}
-          {main}
-        </main>
-      </div>
+          </label>
+          <button className="btn btn-acc" onClick={pick} disabled={status === 'loading'}>
+            <Upload {...ICON} aria-hidden />
+            Загрузить логи
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".txt,.log,text/plain"
+            multiple
+            hidden
+            onChange={(e) => {
+              loadFiles(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        </header>
+        {body}
+      </main>
     </div>
   );
 }

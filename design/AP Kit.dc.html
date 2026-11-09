@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"></helmet>
+<div style="{{ rootStyle }}">
+<div style="background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:40px;display:flex;flex-direction:column;gap:32px;box-sizing:border-box">
+ <div style="font-weight:600;font-size:20px;letter-spacing:-0.01em">{{ title }}</div>
+ <div>
+  <div style="font-size:12px;color:var(--mut);margin-bottom:12px;font-family:'IBM Plex Mono',monospace">ЦВЕТОВЫЕ ТОКЕНЫ</div>
+  <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px">
+   <sc-for list="{{ sw }}" as="c" hint-placeholder-count="12"><div style="border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--surf)"><div style="height:44px;background:{{ c.v }};border-bottom:1px solid var(--bd)"></div><div style="padding:8px 10px"><div style="font:500 12px 'IBM Plex Mono',monospace">--{{ c.k }}</div><div style="font-size:11.5px;color:var(--mut)">{{ c.d }}</div></div></div></sc-for>
+  </div>
+ </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+  <div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:10px">
+   <div style="font-size:12px;color:var(--mut);font-family:'IBM Plex Mono',monospace">ТИПОГРАФИКА · IBM Plex Sans / Plex Mono</div>
+   <div style="font-size:72px;font-weight:600;letter-spacing:-0.03em;line-height:1">23 / 30</div>
+   <div style="font-size:28px;font-weight:600;letter-spacing:-0.02em">Расчёт Activity Points</div>
+   <div style="font-size:15px;font-weight:600">Заголовок блока · 15/600</div>
+   <div style="font-size:14px">Основной текст · 14/400, межстрочный 1.45</div>
+   <div style="font-size:12.5px;color:var(--mut)">Подпись · 12.5/400, --mut</div>
+   <div style="font:400 12.5px/1.7 'IBM Plex Mono',monospace;color:var(--fade)">14:02:11 <span style="color:var(--tx)">Логи · Plex Mono 12.5/1.7</span></div>
+  </div>
+  <div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:16px">
+   <div style="font-size:12px;color:var(--mut);font-family:'IBM Plex Mono',monospace">КОМПОНЕНТЫ</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Карточка фракции</div><div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--surf)"><div style="width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--surf2);display:grid;place-items:center;font:500 11px 'IBM Plex Mono',monospace;color:var(--mut)">TF</div><span style="flex:1;font-weight:500;font-size:13.5px">The Families</span></div></div>
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Выбрана</div><div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--acc);box-shadow:0 0 0 1px var(--acc);border-radius:10px;background:var(--surf2)"><div style="width:30px;height:30px;border-radius:8px;background:var(--acc);color:var(--accTx);display:grid;place-items:center;font:500 11px 'IBM Plex Mono',monospace">TB</div><span style="flex:1;font-weight:500;font-size:13.5px">The Ballas Gang</span><span style="width:16px;height:16px;border-radius:50%;background:var(--acc);color:var(--accTx);display:grid;place-items:center;font-size:10px;font-weight:700">✓</span></div></div>
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Заблокирована</div><div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--dbd);border-radius:10px;background:var(--dbg);color:var(--dtx);cursor:not-allowed"><div style="width:30px;height:30px;border-radius:8px;border:1px solid var(--dbd);display:grid;place-items:center;font:500 11px 'IBM Plex Mono',monospace">LP</div><span style="flex:1;font-weight:500;font-size:13.5px">LSPD</span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg></div></div>
+   </div>
+   <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Бейдж «Скоро»</div><span style="font-size:11px;font-weight:500;padding:1px 7px;border-radius:99px;border:1px solid var(--dbd);color:var(--dtx)">Скоро</span></div>
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Бейдж лимита</div><div style="border:1px solid var(--abd);background:var(--abg);border-radius:12px;padding:12px 14px;color:var(--amber);font-weight:600;font-size:13.5px">Лимит: засчитано 30<div style="font-weight:400;color:var(--mut);font-size:12.5px;margin-top:4px">набрано 47 · урезано 17</div></div></div>
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Счётчик +/−</div><div style="display:flex;align-items:center;gap:6px"><span style="{{ sq }}">−</span><span style="min-width:20px;text-align:center;font:600 14px 'IBM Plex Mono',monospace">2</span><span style="{{ sq }}">+</span></div></div>
+    <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Статус</div><div style="display:flex;gap:6px"><span style="color:var(--green);background:var(--gbg);border:1px solid var(--gbd);border-radius:99px;padding:1px 10px;font:500 12.5px 'IBM Plex Mono',monospace">×3</span><span style="color:var(--amber);background:var(--abg);border:1px solid var(--abd);border-radius:99px;padding:3px 10px;font:500 12.5px 'IBM Plex Mono',monospace">8 из 10</span><span style="color:var(--red);background:var(--rbg);border:1px solid var(--rbd);border-radius:99px;padding:3px 10px;font:500 12.5px 'IBM Plex Mono',monospace">ошибка</span></div></div>
+   </div>
+   <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Строка таблицы (подтверждено / без выполнений)</div>
+    <div style="border:1px solid var(--bd);border-radius:10px;overflow:hidden">
+     <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--gbg);box-shadow:inset 3px 0 0 var(--green)"><span style="font-weight:500">Взлом дома</span><span style="font:600 15px 'IBM Plex Mono',monospace">+3</span></div>
+     <div style="display:flex;justify-content:space-between;padding:12px 16px;opacity:.5;border-top:1px solid var(--bd)"><span style="font-weight:500">Ограбление магазина</span><span style="font:600 15px 'IBM Plex Mono',monospace">0</span></div>
+    </div></div>
+   <div><div style="font-size:11.5px;color:var(--mut);margin-bottom:6px">Аккордеон доказательств</div>
+    <div style="background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font:400 12.5px/1.7 'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden"><span style="color:var(--fade)">18:05:33</span>  [Ballas] Ray_Cole <span style="color:var(--hl);background:var(--hlbg);border-radius:3px;padding:0 3px">взламывает дом</span> №1204</div></div>
+  </div>
+ </div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const TH = {
+ dark: {bg:'#0b0b0c',surf:'#131313',surf2:'#1a1918',code:'#0d0d0d',bd:'#262423',tx:'#e8eaed',mut:'#a39e98',fade:'#6e6963',acc:'oklch(0.70 0.18 48)',accTx:'#160a03',green:'oklch(0.80 0.15 155)',gbg:'oklch(0.80 0.15 155 / 0.10)',gbd:'oklch(0.80 0.15 155 / 0.28)',amber:'oklch(0.84 0.14 92)',abg:'oklch(0.84 0.14 92 / 0.10)',abd:'oklch(0.84 0.14 92 / 0.30)',red:'oklch(0.74 0.15 25)',rbg:'oklch(0.74 0.15 25 / 0.10)',rbd:'oklch(0.74 0.15 25 / 0.30)',dbg:'#12151a',dbd:'#262423',dtx:'#4f5763',hl:'oklch(0.84 0.14 92)',hlbg:'oklch(0.84 0.14 92 / 0.14)'},
+ light: {bg:'#f6f4f1',surf:'#ffffff',surf2:'#f3f0ec',code:'#f8f6f3',bd:'#e5e0da',tx:'#14171c',mut:'#586170',fade:'#8a929e',acc:'oklch(0.60 0.19 45)',accTx:'#ffffff',green:'oklch(0.46 0.13 155)',gbg:'oklch(0.96 0.045 155)',gbd:'oklch(0.86 0.08 155)',amber:'oklch(0.50 0.12 65)',abg:'oklch(0.965 0.06 88)',abd:'oklch(0.86 0.10 85)',red:'oklch(0.50 0.18 25)',rbg:'oklch(0.965 0.03 25)',rbd:'oklch(0.86 0.08 25)',dbg:'#eceef1',dbd:'#d9dce2',dtx:'#a4abb6',hl:'oklch(0.45 0.12 65)',hlbg:'oklch(0.92 0.10 90)'}
+};
+const D = {bg:'фон страницы',surf:'карточки',surf2:'поля, hover',code:'блок логов',bd:'границы',tx:'текст',mut:'вторичный текст',fade:'время, подписи',acc:'акцент, выбор',green:'подтверждено',gbg:'фон зелёный',amber:'спорное / лимит',abg:'фон янтарный',red:'ошибка',rbg:'фон ошибки',dbg:'disabled фон',dbd:'disabled граница',dtx:'disabled текст',hl:'ключевое слово'};
+class Component extends DCLogic {
+ renderVals() {
+  const theme = this.props.theme || 'dark', T = TH[theme];
+  return {rootStyle: Object.keys(T).map(k => '--' + k + ':' + T[k]).join(';'), title: 'Токены и компоненты · ' + (theme === 'dark' ? 'тёмная тема' : 'светлая тема'),
+   sw: Object.keys(D).map(k => ({k, v: T[k], d: D[k]})),
+   sq: 'width:30px;height:30px;border-radius:7px;border:1px solid var(--bd);background:var(--surf);display:grid;place-items:center;font:500 16px IBM Plex Mono,monospace'};
+ }
+}
+
+</script>
+</body>
+</html>

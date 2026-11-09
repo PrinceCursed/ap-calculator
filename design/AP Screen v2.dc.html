@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>AP Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></helmet>
+<div style="{{ rootStyle }}">
+<div style="display:flex;flex-direction:{{ shellDir }};min-height:{{ minH }};background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;box-sizing:border-box">
+
+ <div style="{{ sideStyle }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:32px">
+   <div style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600"><span style="display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--acc);color:var(--accTx);font:600 12px system-ui">AP</span>AP Calculator</div>
+   <button aria-label="Переключить тему" onClick="{{ toggleTheme }}" style="display:{{ mobFlex }};width:32px;height:32px;border:1px solid var(--bd);background:transparent;border-radius:6px;color:var(--mut);align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ themeIcon }}"/></svg></button>
+  </div>
+
+  <button aria-expanded="{{ menuOpen }}" onClick="{{ toggleMenu }}" style="display:{{ mobFlex }};height:44px;padding:0 12px;border:1px solid var(--bd);border-radius:6px;background:var(--p2);color:var(--tx);font:500 14px Inter,sans-serif;align-items:center;gap:12px;cursor:pointer;text-align:left">
+   <img src="{{ facEmblem }}" width="28" height="28" alt="" style="display:block;flex:none"/><span style="flex:1">{{ facName }}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--mut)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+
+  <div style="display:{{ listDisp }};flex-direction:column;gap:16px;{{ listBox }}">
+   <div style-focus-within="border-color:var(--acc)" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--bd);border-radius:6px;background:var(--bg)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fade)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-4.3-4.3M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"/></svg>
+    <input aria-label="Поиск фракции" value="{{ q }}" onInput="{{ setQ }}" placeholder="Поиск фракции" style="flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--tx);font:400 14px Inter,sans-serif"/>
+   </div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;padding:2px;border:1px solid var(--bd);border-radius:6px;background:var(--bg)">
+    <button onClick="{{ setCrime }}" style="{{ segCrime }}">Crime</button>
+    <button onClick="{{ setGov }}" style="{{ segGov }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14v10H5zM7 11V7a5 5 0 0 1 10 0v4"/></svg>Гос</button>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:2px;position:relative">
+    <div style="font-size:12px;letter-spacing:0.12em;color:var(--fade);padding:0 12px 8px;font-weight:500">{{ listLabel }}</div>
+    <sc-for list="{{ items }}" as="f" hint-placeholder-count="10">
+     <button type="button" aria-label="{{ f.label }}" aria-disabled="{{ f.lock }}" aria-pressed="{{ f.selected }}" style-hover="border-color:var(--bd2)" style-focus-visible="outline:2px solid var(--acc);outline-offset:2px" onClick="{{ f.pick }}" onFocus="{{ f.hov }}" onBlur="{{ f.leave }}" onMouseEnter="{{ f.hov }}" onMouseLeave="{{ f.leave }}" style="{{ f.st }}">
+      <img src="{{ f.emblem }}" width="32" height="32" alt="" style="display:block;flex:none"/>
+      <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</span>
+      <sc-if value="{{ f.cnt }}" hint-placeholder-val="{{ false }}"><span style="min-width:28px;height:24px;padding:0 8px;box-sizing:border-box;border-radius:6px;background:var(--p2);border:1px solid var(--bd);color:var(--mut);font:400 12px/22px 'JetBrains Mono',monospace;text-align:center">{{ f.cnt }}</span></sc-if>
+      <sc-if value="{{ f.lock }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14v10H5zM7 11V7a5 5 0 0 1 10 0v4"/></svg></sc-if>
+      <sc-if value="{{ f.tip }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:8px;right:8px;top:calc(100% + 4px);z-index:5;background:var(--tx);color:var(--bg);font-size:12px;padding:6px 10px;border-radius:6px;white-space:normal">Правила для гос. структур ещё не добавлены</div></sc-if>
+     </button>
+    </sc-for>
+    <sc-if value="{{ noItems }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 12px;color:var(--fade);font-size:14px">Ничего не найдено</div></sc-if>
+   </div>
+  </div>
+
+  <div style="margin-top:auto;display:{{ deskFlex }};flex-direction:column;gap:8px">
+   <div style="display:grid;grid-template-columns:1fr 1fr;padding:2px;border:1px solid var(--bd);border-radius:6px;background:var(--bg)">
+    <button onClick="{{ setDark }}" style="{{ segDark }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>Тёмная</button>
+    <button onClick="{{ setLight }}" style="{{ segLight }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>Светлая</button>
+   </div>
+  </div>
+ </div>
+
+ <div style="flex:1;min-width:0;width:100%;max-width:1160px;margin:0 auto;padding:{{ mainPad }};display:flex;flex-direction:column;gap:24px;box-sizing:border-box">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+   <img src="{{ facEmblem }}" width="52" height="52" alt="" style="display:block;flex:none"/>
+   <div style="flex:1;min-width:175px"><div style="font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--mut)">РАСЧЁТ ACTIVITY POINTS</div><h1 style="margin:0;font-size:{{ titleSize }};font-weight:650;letter-spacing:-0.035em;line-height:1.2">{{ facName }}</h1></div>
+   <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--bd);border-radius:6px;background:var(--p);font:400 14px 'JetBrains Mono',monospace;color:{{ dateColor }}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--mut)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18"/></svg>{{ dateText }}</div>
+   <button style="height:36px;padding:0 16px;border:0;border-radius:6px;background:var(--acc);color:var(--accTx);font:500 14px Inter,sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Загрузить логи</button>
+  </div>
+
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+   <div style="border:1px dashed var(--bd2);border-radius:16px;background:var(--p);min-height:{{ dzH }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;box-sizing:border-box">
+    <svg style="padding:12px;border-radius:14px;background:var(--accBg);margin-bottom:4px" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+    <div style="font-size:17px;font-weight:600">Перетащите .txt-файл с логами</div>
+    <div style="font-size:12px;color:var(--mut)">Файл обрабатывается в браузере и никуда не отправляется</div>
+   </div>
+  </sc-if>
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+   <div style="border:1px solid var(--bd);background:var(--p);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span style="font:500 14px 'JetBrains Mono',monospace">logs_2026-11-09.txt</span><span style="font-size:12px;color:var(--mut)">18,4 МБ</span></div><button style="height:32px;padding:0 12px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:var(--tx);font:500 14px Inter,sans-serif;cursor:pointer">Отменить</button></div>
+    <div style="height:4px;background:var(--bd);border-radius:2px;overflow:hidden"><div style="width:62%;height:100%;background:var(--acc)"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut)"><span>Обработано 41 200 из 66 400 строк</span><span style="color:var(--tx);font-family:'JetBrains Mono',monospace">62%</span></div>
+   </div>
+  </sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+   <div style="border:1px solid var(--bd);background:var(--p);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:16px;align-items:flex-start">
+    <div style="display:flex;gap:16px;align-items:flex-start"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--mut)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9.5 12.5l5 5M14.5 12.5l-5 5"/></svg><div><div style="font-size:16px;font-weight:500">Файл не похож на логи</div><div style="color:var(--mut)">Не найдено ни одной строки нужного формата</div></div></div>
+    <button style="height:36px;padding:0 16px;border:1px solid var(--bd2);border-radius:6px;background:transparent;color:var(--tx);font:500 14px Inter,sans-serif;cursor:pointer">Выбрать другой файл</button>
+   </div>
+  </sc-if>
+  <sc-if value="{{ isNoData }}" hint-placeholder-val="{{ false }}">
+   <div style="border:1px solid var(--bd);background:var(--p);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:16px;align-items:flex-start">
+    <div><div style="font-size:16px;font-weight:500">За выбранную дату для этой фракции строк нет</div><div style="color:var(--mut)">Проверьте дату и фракцию.</div></div>
+    <div style="font-size:12px;color:var(--fade)">Проигнорировано строк других фракций и дат: 66 412</div>
+   </div>
+  </sc-if>
+
+  <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
+   <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="border:1px solid var(--bd);background:var(--p);border-radius:16px;padding:24px;display:grid;grid-template-columns:{{ sumCols }};gap:24px;align-items:end">
+     <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div style="font-size:12px;color:var(--mut)">Итого за {{ dateText }}</div>
+      <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;line-height:1">
+       <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}"><span style="font-size:40px;font-weight:600;letter-spacing:-0.02em;color:var(--fade);text-decoration:line-through">{{ raw }}</span><span style="font-size:24px;color:var(--mut)">→</span></sc-if>
+       <span style="font-size:48px;font-weight:650;letter-spacing:-0.04em">{{ shown }}</span><span style="font-size:16px;color:var(--mut)">/ 30 AP</span>
+      </div>
+      <div style="height:4px;background:var(--bd);border-radius:2px;overflow:hidden"><div style="{{ barStyle }}"></div></div>
+      <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}"><div style="color:var(--amber);font-size:14px">Лимит: засчитано 30, набрано {{ raw }}, урезано {{ cut }}</div></sc-if>
+     </div>
+     <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)"><span style="font-family:'JetBrains Mono',monospace;color:var(--tx);font-size:12px">logs_2026-11-09.txt</span><span>18,4 МБ · 66 400 строк</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+     <div style="display:flex;flex-wrap:wrap;gap:3px;padding:3px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);width:fit-content;max-width:100%">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3"><button onClick="{{ t.pick }}" style="{{ t.st }}">{{ t.label }}</button></sc-for>
+     </div>
+
+     <sc-if value="{{ tabAch }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px solid var(--bd);background:var(--p);border-radius:8px;overflow:hidden">
+       <div style="display:grid;grid-template-columns:{{ cols }};gap:16px;padding:0 16px;height:36px;align-items:center;border-bottom:1px solid var(--bd);font-size:12px;color:var(--mut)"><span>Достижение</span><span style="display:{{ colD }}">За ед.</span><span style="display:{{ colD }}">Засчитано</span><span style="text-align:right">Итого</span><span></span></div>
+       <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+        <div style="border-bottom:1px solid var(--bd)">
+         <div onClick="{{ r.toggle }}" style="{{ r.rowSt }}">
+          <span style="display:flex;align-items:center;gap:12px;min-width:0"><span style="{{ r.dot }}"></span><span style="display:flex;flex-direction:column;min-width:0"><span>{{ r.name }}</span><span style="font-size:12px;color:var(--mut);display:{{ colM }}">{{ r.sub }}</span></span></span>
+          <span style="display:{{ colD }};font-family:'JetBrains Mono',monospace;color:var(--mut)">{{ r.pts }}</span>
+          <span style="display:{{ colD }};font-family:'JetBrains Mono',monospace">{{ r.n }}</span>
+          <span style="text-align:right;font:500 14px 'JetBrains Mono',monospace">{{ r.sum }}</span>
+          <span style="{{ r.chev }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+         </div>
+         <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:0 16px 16px 36px;display:flex;flex-direction:column;gap:12px">
+           <div style="font-size:12px;letter-spacing:0.12em;color:var(--fade);font-weight:500">ДОКАЗАТЕЛЬСТВА</div>
+           <sc-if value="{{ r.empty }}" hint-placeholder-val="{{ false }}"><div style="color:var(--mut)">Выполнений не найдено</div></sc-if>
+           <sc-for list="{{ r.groups }}" as="g" hint-placeholder-count="1">
+            <div style="display:flex;flex-direction:column;gap:8px">
+             <sc-if value="{{ g.title }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--mut);font-weight:500">{{ g.title }}</div></sc-if>
+             <div style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;font:400 12px/20px 'JetBrains Mono',monospace;overflow-x:auto">
+              <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="3"><div style="display:flex;gap:16px;white-space:nowrap"><span style="color:var(--fade);width:40px;text-align:right;flex:none">{{ l.no }}</span><span style="color:var(--mut);flex:none">{{ l.t }}</span><span><sc-for list="{{ l.parts }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.s }}</span></sc-for></span></div></sc-for>
+             </div>
+            </div>
+           </sc-for>
+          </div>
+         </sc-if>
+        </div>
+       </sc-for>
+      </div>
+     </sc-if>
+
+     <sc-if value="{{ tabDisp }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid var(--bd);background:var(--p);border-radius:8px;overflow:hidden">
+       <div style="display:grid;grid-template-columns:{{ dcols }};gap:16px;padding:0 16px;height:36px;align-items:center;border-bottom:1px solid var(--bd);font-size:12px;color:var(--mut)"><span>Что было похоже</span><span>Результат</span><span></span></div>
+       <sc-for list="{{ disputes }}" as="r" hint-placeholder-count="2">
+        <div style="border-bottom:1px solid var(--bd)">
+         <div onClick="{{ r.toggle }}" style="display:grid;grid-template-columns:{{ dcols }};gap:16px;padding:0 16px;min-height:44px;align-items:center;cursor:pointer">
+          <span style="display:flex;align-items:center;gap:12px"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex:none"></span>{{ r.name }}</span>
+          <span style="font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:12px">{{ r.note }}</span>
+          <span style="{{ r.chev }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+         </div>
+         <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:0 16px 16px 36px;display:flex;flex-direction:column;gap:12px">
+           <div style="font-size:12px;letter-spacing:0.12em;color:var(--fade);font-weight:500">ДОКАЗАТЕЛЬСТВА</div>
+           <sc-for list="{{ r.groups }}" as="g" hint-placeholder-count="1">
+            <div style="display:flex;flex-direction:column;gap:8px">
+             <div style="font-size:12px;color:var(--mut);font-weight:500">{{ g.title }}</div>
+             <div style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;font:400 12px/20px 'JetBrains Mono',monospace;overflow-x:auto">
+              <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="3"><div style="display:flex;gap:16px;white-space:nowrap"><span style="color:var(--fade);width:40px;text-align:right;flex:none">{{ l.no }}</span><span style="color:var(--mut);flex:none">{{ l.t }}</span><span><sc-for list="{{ l.parts }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.s }}</span></sc-for></span></div></sc-for>
+             </div>
+            </div>
+           </sc-for>
+          </div>
+         </sc-if>
+        </div>
+       </sc-for>
+      </div>
+     </sc-if>
+
+     <sc-if value="{{ tabMan }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px">
+       <div style="display:grid;grid-template-columns:{{ manCols }};gap:16px">
+        <sc-for list="{{ manual }}" as="m" hint-placeholder-count="8">
+         <div style="{{ m.st }}">
+          <span style="width:32px;height:32px;border-radius:50%;background:var(--p2);border:1px solid var(--bd);display:grid;place-items:center;color:{{ m.ic }};flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ m.d }}"/></svg></span>
+          <span style="flex:1;min-width:0"><div style="line-height:1.3">{{ m.name }}</div><div style="font:400 12px 'JetBrains Mono',monospace;color:var(--mut)">{{ m.pts }} AP</div></span>
+          <span style="display:flex;align-items:center;gap:8px;flex:none"><button aria-label="Уменьшить · {{ m.name }}" onClick="{{ m.dec }}" style="{{ btnSq }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14"/></svg></button><span style="min-width:16px;text-align:center;font:500 14px 'JetBrains Mono',monospace">{{ m.n }}</span><button aria-label="Увеличить · {{ m.name }}" onClick="{{ m.inc }}" style="{{ btnSq }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button></span>
+         </div>
+        </sc-for>
+       </div>
+       <div style="border:1px solid var(--bd);background:var(--p);border-radius:8px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div><div>Ручная корректировка</div><div style="font-size:12px;color:var(--mut)">+/− AP к итогу</div></div>
+        <div style="display:flex;align-items:center;gap:8px"><button aria-label="Уменьшить корректировку" onClick="{{ adjDec }}" style="{{ btnSq }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14"/></svg></button><span style="min-width:40px;text-align:center;font:500 14px 'JetBrains Mono',monospace;padding:6px 0;border:1px solid var(--bd);border-radius:6px;background:var(--bg)">{{ adjText }}</span><button aria-label="Увеличить корректировку" onClick="{{ adjInc }}" style="{{ btnSq }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button></div>
+       </div>
+      </div>
+     </sc-if>
+     <div style="font-size:12px;color:var(--fade)">Проигнорировано строк других фракций и дат: 66 412</div>
+    </div>
+   </div>
+  </sc-if>
+ </div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty&quot;,&quot;loading&quot;,&quot;error&quot;,&quot;nodata&quot;,&quot;locked&quot;,&quot;result&quot;,&quot;overflow&quot;],&quot;default&quot;:&quot;empty&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ach&quot;,&quot;disp&quot;,&quot;man&quot;],&quot;default&quot;:&quot;ach&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;},&quot;height&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:900,&quot;tsType&quot;:&quot;number&quot;},&quot;menu&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const TH = {
+ dark: {bg:'#101316',p:'#171c20',p2:'#20272c',bd:'#2e383e',bd2:'#53626a',tx:'#f0f4f4',mut:'#a7b4b9',fade:'#8c9aa2',acc:'oklch(0.74 0.14 150)',accTx:'#0c1a10',accBg:'oklch(0.74 0.14 150 / 0.14)',amber:'oklch(0.80 0.13 80)',abg:'oklch(0.80 0.13 80 / 0.14)',dtx:'#a7b4b9'},
+ light: {bg:'#f2f5f4',p:'#ffffff',p2:'#edf2f0',bd:'#d6e0dd',bd2:'#aabbb6',tx:'#172321',mut:'#4f625d',fade:'#5e716d',acc:'oklch(0.52 0.13 150)',accTx:'#ffffff',accBg:'oklch(0.52 0.13 150 / 0.12)',amber:'oklch(0.52 0.12 70)',abg:'oklch(0.52 0.12 70 / 0.12)',dtx:'#5e696a'}
+};
+const CRIME = ['The Ballas Gang','Marabunta Grande','Los Santos Vagos','The Families','Bloods','Русская','Итальянская','Армянская','Мексиканская','Японская'];
+const GOV = ['LSPD','LSSD','FIB','National Guard','Федеральная тюрьма','Weazel News','Мэрия ЛС','Medical Services'];
+const CRIME_EMBLEMS = ['ballas', 'marabunta', 'vagos', 'families', 'bloods', 'russian', 'italian', 'armenian', 'mexican', 'japanese'];
+const GOV_EMBLEMS = ['lspd', 'lssd', 'fib', 'national-guard', 'prison', 'weazel', 'city-hall', 'medical'];
+const emblem = (group, index) => './emblems/' + (group ? GOV_EMBLEMS : CRIME_EMBLEMS)[index] + '.svg';
+const L = (no, t, s) => ({no, t, parts: s.split('|').map((x, i) => ({s: x, h: i % 2 === 1}))});
+const EV = {
+ train: [{title:'Шаг 1: 12 участников', lines:[L(18204,'14:02:11','Marco_Diaz (#4521) |участвует в нападении| на поезд'),L(18205,'14:02:12','Jay_Carter (#3087) |участвует в нападении| на поезд'),L(18207,'14:02:15','Tony_Reed (#1190) |участвует в нападении| на поезд'),L(18211,'14:02:19','… ещё 9 строк')]},{title:'Шаг 2: доставка, 239 ящ.', lines:[L(19340,'14:31:40','Marco_Diaz (#4521) |доставляет грузовик|: 120 ящ.'),L(19388,'14:33:02','Tony_Reed (#1190) |доставляет грузовик|: 119 ящ.')]}],
+ cargo: [{title:'Шаг 1: 9 участников', lines:[L(31002,'16:10:05','Ray_Cole (#2210) |участвует в нападении| на конвой')]},{title:'Шаг 2: доставка, 214 ящ.', lines:[L(31960,'16:44:21','Ray_Cole (#2210) |доставляет грузовик|: 214 ящ.')]}],
+ house: [{title:'', lines:[L(40118,'18:05:33','Ray_Cole (#2210) |взламывает дом| №1204'),L(40301,'18:09:10','Jay_Carter (#3087) |взламывает дом| №877'),L(40466,'18:12:48','Tony_Reed (#1190) |взламывает дом| №2031')]}],
+ terr: [{title:'', lines:[L(48820,'20:00:02','|захватывает территорию| Grove Street, 14 участников')]}],
+ fight: [{title:'', lines:[L(52311,'21:15:09','Jay_Carter (#3087) |убил| LSPD Officer_Hale'),L(52340,'21:15:40','Marco_Diaz (#4521) |убил| LSPD Officer_Vance')]}]
+};
+const DISP = [
+ {name:'Нападение на поезд', note:'8 из 10 участников', groups:[{title:'Нужно 10 участников, найдено 8', lines:[L(55102,'19:02:11','Marco_Diaz (#4521) |участвует в нападении| на поезд'),L(55104,'19:02:14','Jay_Carter (#3087) |участвует в нападении| на поезд'),L(55109,'19:02:20','… ещё 6 строк')]}]},
+ {name:'Взлом домов', note:'27 из 30 домов', groups:[{title:'Нужно 30 взломов, найдено 27', lines:[L(60011,'22:01:09','Ray_Cole (#2210) |взламывает дом| №311'),L(60040,'22:03:44','Tony_Reed (#1190) |взламывает дом| №902'),L(60075,'22:05:30','… ещё 25 строк')]}]}
+];
+const MAN = [['Организация мероприятия',2,'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18'],['Помощь новичкам',1,'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z'],['Победа в войне за территорию',3,'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7'],['Работа с рекрутингом',1,'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8'],['Участие в собрании',1,'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],['Урегулирование конфликта',1,'M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.500 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.500-1.200 6.200-2.700a1.200 1.200 0 0 1 1.500 0C14.500 3.800 17 5 19 5a1 1 0 0 1 1 1z'],['Взаимодействие с фракцией',2,'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0zM18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0z'],['Активность на форуме',1,'M12 2l3.1 6.3 6.900 1-5 4.900 1.200 6.900L12 17.800 5.800 21.100 7 14.200 2 9.300l6.900-1z']];
+class Component extends DCLogic {
+ state = {theme: null, tab: null, sel: 0, q: '', rtab: null, open: {}, tipI: -1, man: [0,0,0,0,0,0,0,0], adj: 0, menu: null};
+ renderVals() {
+  const p = this.props, s = this.state;
+  const theme = s.theme || p.theme || 'dark', T = TH[theme];
+  const view = p.view || 'empty', width = +(p.width || 1440), mob = width < 700;
+  const gov = (s.tab || (view === 'locked' ? 'gov' : 'crime')) === 'gov';
+  const set = o => this.setState(o);
+  const menu = s.menu === null ? !!p.menu : s.menu;
+  const res = view === 'result' || view === 'overflow', over = view === 'overflow';
+  const rtab = s.rtab || p.tab || 'ach';
+  const tog = k => () => set(st => ({open: {...st.open, [k]: !st.open[k]}}));
+  const A = [['Нападение на поезд (2 шага)',5,over?3:1,'train'],['Доставка груза (2 шага)',4,over?4:2,'cargo'],['Взлом дома',1,over?6:3,'house'],['Захват территории',3,over?2:1,'terr'],['Перестрелка с гос. структурой',2,2,'fight'],['Ограбление магазина',2,0,'']];
+  const stl = (h, c) => h ? `color:var(--${c});background:var(--${c==='amber'?'abg':'accBg'});border-radius:3px;padding:0 2px` : 'color:var(--tx)';
+  const mapG = (gs, c) => gs.map(g => ({title: g.title, lines: g.lines.map(l => ({no: l.no, t: l.t, parts: l.parts.map(x => ({s: x.s, st: stl(x.h, c)}))}))}));
+  const cols = mob ? 'minmax(0,1fr) 56px 24px' : 'minmax(0,1fr) 96px 96px 96px 24px';
+  const dcols = mob ? 'minmax(0,1fr) auto 24px' : 'minmax(0,1fr) 200px 24px';
+  const chev = o => `display:grid;place-items:center;color:var(--mut);transition:transform .15s;transform:rotate(${o?180:0}deg)`;
+  let auto = 0;
+  const rows = A.map((a, i) => { const k = 'r' + i, tot = a[1] * a[2], z = !a[2], open = !!s.open[k]; auto += tot;
+   return {name: a[0], pts: '+' + a[1], n: a[2], sum: z ? '0' : '+' + tot, sub: '+' + a[1] + ' за ед. · ×' + a[2], open, empty: z, groups: z ? [] : mapG(EV[a[3]], 'acc'), toggle: tog(k), chev: chev(open),
+    rowSt: `display:grid;grid-template-columns:${cols};gap:16px;padding:0 16px;min-height:44px;align-items:center;cursor:pointer;opacity:${z?0.5:1}`,
+    dot: `width:8px;height:8px;border-radius:50%;flex:none;${z?'border:1px solid var(--fade)':'background:var(--acc)'}`}; });
+  const disputes = DISP.map((d, i) => { const k = 'd' + i, open = !!s.open[k]; return {name: d.name, note: d.note, open, groups: mapG(d.groups, 'amber'), toggle: tog(k), chev: chev(open)}; });
+  const manSum = s.man.reduce((a, n, i) => a + n * MAN[i][1], 0);
+  const raw = auto + manSum + s.adj, shown = Math.min(30, raw);
+  const manual = MAN.map((m, i) => ({name: m[0], pts: '+' + m[1], d: m[2], n: s.man[i], ic: s.man[i] ? 'var(--acc)' : 'var(--mut)',
+   st: `display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:8px;background:var(--p);min-height:64px;box-sizing:border-box`,
+   dec: () => set(st => { const a = st.man.slice(); a[i] = Math.max(0, a[i] - 1); return {man: a}; }),
+   inc: () => set(st => { const a = st.man.slice(); a[i]++; return {man: a}; })}));
+  const names = (gov ? GOV : CRIME).map((n, i) => ({n, i})).filter(x => x.n.toLowerCase().includes(s.q.toLowerCase()));
+  const items = names.map(x => { const sel = !gov && s.sel === x.i, tip = gov && (s.tipI === x.i || (view === 'locked' && s.tipI === -1 && x.i === 1));
+   const CN=[24,18,30,12,9,27,21,15,6,0];return {name: x.n, label: gov ? x.n + ' · правила ещё не добавлены' : x.n, selected: sel, emblem: emblem(gov, x.i), lock: gov, cnt: gov ? '' : String(CN[x.i]), tip, pick: gov ? () => {} : () => set({sel: x.i, menu: false}), hov: gov ? () => set({tipI: x.i}) : () => {}, leave: () => set({tipI: -2}),
+    st: `display:flex;align-items:center;gap:10px;min-height:46px;padding:0 9px;border:1px solid transparent;border-radius:9px;font:inherit;text-align:left;box-sizing:border-box;position:relative;cursor:${gov?'not-allowed':'pointer'};color:${gov?'var(--dtx)':'var(--tx)'};background:${sel?'var(--accBg)':'transparent'};box-shadow:${sel?'inset 2px 0 0 var(--acc)':'none'}`}; });
+  const seg = on => `height:28px;border:0;border-radius:4px;font:500 14px Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:${on?'var(--p2)':'transparent'};color:${on?'var(--tx)':'var(--mut)'};box-shadow:${on?'0 0 0 1px var(--bd)':'none'}`;
+  const sel = CRIME[s.sel];
+  const tdef = [['ach','Достижения'],['disp',mob ? 'Спорные (2)' : 'Спорные случаи (2)'],['man','Ручные']];
+  const pct = Math.min(100, shown / 30 * 100);
+  const flexOn = b => b ? 'flex' : 'none';
+  return {
+   rootStyle: Object.keys(T).map(k => '--' + k + ':' + T[k]).join(';'),
+   shellDir: mob ? 'column' : 'row', minH: (p.height || 900) + 'px',
+   sideStyle: mob ? 'padding:16px;display:flex;flex-direction:column;gap:16px;border-bottom:1px solid var(--bd);background:var(--p);box-sizing:border-box;position:relative' : 'width:292px;flex:none;padding:24px 16px;display:flex;flex-direction:column;gap:24px;border-right:1px solid var(--bd);background:var(--p);box-sizing:border-box',
+   mobFlex: flexOn(mob), deskFlex: flexOn(!mob), listDisp: !mob || menu ? 'flex' : 'none', listBox: mob ? 'position:absolute;left:16px;right:16px;top:calc(100% - 8px);z-index:10;background:var(--p);border:1px solid var(--bd2);border-radius:8px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.3)' : '',
+   menuOpen: menu, toggleMenu: () => set({menu: !menu}), toggleTheme: () => set({theme: theme === 'dark' ? 'light' : 'dark'}), themeIcon: theme === 'dark' ? 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z' : 'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4',
+   setDark: () => set({theme: 'dark'}), setLight: () => set({theme: 'light'}), segDark: seg(theme === 'dark'), segLight: seg(theme === 'light'),
+   q: s.q, setQ: e => set({q: e.target.value}), setCrime: () => set({tab: 'crime'}), setGov: () => set({tab: 'gov'}),
+   segCrime: seg(!gov), segGov: seg(gov), listLabel: gov ? 'ГОС. СТРУКТУРЫ' : 'CRIME', items, noItems: names.length === 0,
+   facName: sel, facEmblem: emblem(false, s.sel),
+   titleSize: mob ? '22px' : '30px', mainPad: mob ? '24px 16px 40px' : '32px 40px 48px', dateText: view === 'empty' || view === 'locked' || view === 'loading' ? 'Определится из логов' : '09.11.2026', dateColor: view === 'empty' || view === 'locked' || view === 'loading' ? 'var(--mut)' : 'var(--tx)',
+   dzH: mob ? '240px' : '320px', isEmpty: view === 'empty' || view === 'locked', isLoading: view === 'loading', isError: view === 'error', isNoData: view === 'nodata', hasResult: res,
+   over, raw, shown, cut: Math.max(0, raw - 30), sumCols: mob ? '1fr' : 'minmax(0,1fr) auto',
+   barStyle: `width:${pct}%;height:100%;background:${over?'var(--amber)':'var(--acc)'}`,
+   tabs: tdef.map(t => ({label: t[1], pick: () => set({rtab: t[0]}), st: seg(rtab === t[0]) + (mob ? ';padding:0 7px;font-size:12px;white-space:nowrap' : ';padding:0 12px;white-space:nowrap')})),
+   tabAch: rtab === 'ach', tabDisp: rtab === 'disp', tabMan: rtab === 'man',
+   rows, cols, dcols, colD: mob ? 'none' : 'block', colM: mob ? 'block' : 'none', disputes, manual, manCols: mob ? '1fr' : 'repeat(2,minmax(0,1fr))',
+   btnSq: 'width:28px;height:28px;border:1px solid var(--bd2);border-radius:6px;background:transparent;color:var(--tx);display:grid;place-items:center;cursor:pointer;padding:0',
+   adjText: (s.adj > 0 ? '+' : s.adj < 0 ? '−' : '') + Math.abs(s.adj), adjDec: () => set(st => ({adj: st.adj - 1})), adjInc: () => set(st => ({adj: st.adj + 1}))
+  };
+ }
+}
+
+</script>
+</body>
+</html>

@@ -16,11 +16,11 @@ export const crime: FactionGroup = {
     { id: 'vagos', name: 'Los Santos Vagos', aliases: ['LS Vagos', 'Vagos', 'Вагос'] },
     { id: 'families', name: 'The Families', aliases: ['Families', 'Фемили', 'Фэмилис'] },
     { id: 'bloods', name: 'Bloods', aliases: ['The Bloods', 'Bloods Gang', 'Бладс'] },
-    { id: 'rm', name: 'Русская Мафия', aliases: ['Russian Mafia', 'РМ'] },
-    { id: 'lcn', name: 'Итальянская Мафия', aliases: ['Italian Mafia', 'La Cosa Nostra', 'LCN'] },
-    { id: 'am', name: 'Армянская Мафия', aliases: ['Armenian Mafia'] },
-    { id: 'mm', name: 'Мексиканская Мафия', aliases: ['Mexican Mafia'] },
-    { id: 'yak', name: 'Японская Мафия', aliases: ['Japanese Mafia', 'Yakuza', 'Якудза'] },
+    { id: 'rm', name: 'Русская Мафия', short: 'Русская', aliases: ['Russian Mafia', 'РМ'] },
+    { id: 'lcn', name: 'Итальянская Мафия', short: 'Итальянская', aliases: ['Italian Mafia', 'La Cosa Nostra', 'LCN'] },
+    { id: 'am', name: 'Армянская Мафия', short: 'Армянская', aliases: ['Armenian Mafia'] },
+    { id: 'mm', name: 'Мексиканская Мафия', short: 'Мексиканская', aliases: ['Mexican Mafia'] },
+    { id: 'yak', name: 'Японская Мафия', short: 'Японская', aliases: ['Japanese Mafia', 'Yakuza', 'Якудза'] },
   ],
   rules: [
     // 1–2. ФЗ / NG: группы выгрузок из армейских грузовиков. Тип — по наличию ЭМИ-строки перед группой.

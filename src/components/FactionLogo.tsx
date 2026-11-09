@@ -9,7 +9,7 @@ export function monogram(name: string): string {
 }
 
 export function logoUrl(f: Faction): string {
-  return `${import.meta.env.BASE_URL}factions/${f.logo ?? f.id}.webp`;
+  return `${import.meta.env.BASE_URL}factions/${f.logo ?? f.id}.svg`;
 }
 
 /** Логотип фракции. Картинка грузится из public/factions; если её нет или она битая — монограмма. */

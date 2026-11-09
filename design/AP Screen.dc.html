@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>AP Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"></helmet>
+<div style="{{ rootStyle }}">
+<div style="background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.45;min-height:100%;box-sizing:border-box">
+ <div style="border-bottom:1px solid var(--bd);background:var(--surf)">
+  <div style="max-width:1200px;margin:0 auto;padding:{{ hdrPad }};display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box">
+   <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:28px;height:28px;border-radius:7px;background:var(--acc);color:var(--accTx);display:grid;place-items:center;font:600 12px 'IBM Plex Mono',monospace">AP</div>
+    <div style="font-weight:600;font-size:16px;letter-spacing:-0.01em">AP Calculator</div>
+   </div>
+   <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--bd);background:var(--surf2);color:var(--tx);font:500 13px 'IBM Plex Sans',sans-serif;cursor:pointer">
+    <span style="width:14px;height:14px;border-radius:50%;background:var(--tx);opacity:.85;box-shadow:inset {{ moonShadow }}"></span>{{ themeLabel }}</button>
+  </div>
+ </div>
+ <div style="max-width:1200px;margin:0 auto;padding:{{ pad }};display:flex;flex-direction:column;gap:24px;box-sizing:border-box">
+  <div>
+   <h1 style="margin:0;font-size:{{ h1 }};font-weight:600;letter-spacing:-0.02em">Расчёт Activity Points</h1>
+   <p style="margin:6px 0 0;color:var(--mut)">Максимум 30 AP в день на фракцию. Файл обрабатывается в браузере.</p>
+  </div>
+
+  <div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:{{ cardPad }};display:flex;flex-direction:column;gap:20px">
+   <div style="display:flex;align-items:center;gap:10px"><span style="{{ stepNum }}">1</span><span style="font-weight:600;font-size:15px">Фракция</span></div>
+   <div style="display:flex;gap:6px;padding:4px;background:var(--surf2);border:1px solid var(--bd);border-radius:10px;width:fit-content;position:relative">
+    <button onClick="{{ setCrime }}" style="{{ tabCrimeStyle }}">Crime</button>
+    <button onClick="{{ setGov }}" onMouseEnter="{{ tipOn }}" onMouseLeave="{{ tipOff }}" style="{{ tabGovStyle }}">
+     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>Гос
+     <span style="font-size:11px;font-weight:500;padding:1px 7px;border-radius:99px;border:1px solid var(--dbd);color:var(--dtx)">Скоро</span></button>
+    <sc-if value="{{ showTip }}" hint-placeholder-val="{{ false }}">
+     <div style="position:absolute;left:calc(100% - 150px);top:calc(100% + 8px);z-index:5;background:var(--tx);color:var(--bg);padding:8px 12px;border-radius:8px;font-size:13px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+      <div style="position:absolute;top:-4px;left:130px;width:8px;height:8px;background:var(--tx);transform:rotate(45deg)"></div>Правила для гос. структур ещё не добавлены</div>
+    </sc-if>
+   </div>
+   <div style="{{ chipGrid }}">
+    <sc-for list="{{ chips }}" as="c" hint-placeholder-count="10">
+     <button type="button" aria-disabled="{{ c.lock }}" aria-pressed="{{ c.sel }}" style-hover="border-color:var(--mut)" style-focus-visible="outline:2px solid var(--acc);outline-offset:2px" onClick="{{ c.pick }}" onMouseEnter="{{ c.hov }}" style="{{ c.st }}">
+      <img src="{{ c.emblem }}" width="36" height="36" alt="" style="display:block;flex:none"/>
+      <span style="flex:1;min-width:0;font-weight:500;font-size:13.5px;line-height:1.25">{{ c.name }}</span>
+      <sc-if value="{{ c.lock }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg></sc-if>
+      <sc-if value="{{ c.sel }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;border-radius:50%;background:var(--acc);color:var(--accTx);display:grid;place-items:center;font-size:10px;font-weight:700">✓</span></sc-if>
+     </button>
+    </sc-for>
+   </div>
+   <sc-if value="{{ gov }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;color:var(--dtx);font-size:13px">Загрузка логов для гос. структур недоступна.</div></sc-if>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ twoCol }};gap:24px">
+   <div style="{{ cardDis2 }}">
+    <div style="display:flex;align-items:center;gap:10px"><span style="{{ stepNum }}">2</span><span style="font-weight:600;font-size:15px">Дата</span></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+     <div style="height:40px;padding:0 14px;border:1px solid var(--bd);background:var(--surf2);border-radius:8px;display:flex;align-items:center;gap:10px;font:500 14px 'IBM Plex Mono',monospace;min-width:150px;box-sizing:border-box">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--mut)" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M5 1.5v3M11 1.5v3"/></svg>{{ dateText }}</div>
+     <span style="font-size:12.5px;color:var(--mut)">{{ dateHint }}</span>
+    </div>
+   </div>
+   <div style="{{ cardDis3 }}">
+    <div style="display:flex;align-items:center;gap:10px"><span style="{{ stepNum }}">3</span><span style="font-weight:600;font-size:15px">Логи (.txt)</span></div>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+     <div style="{{ dropStyle }}">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--surf2);border:1px solid var(--bd);display:grid;place-items:center;font-size:18px;color:var(--mut)">↑</div>
+      <div style="font-weight:500">Перетащите .txt-файл сюда</div>
+      <div style="color:var(--mut);font-size:13px">или</div>
+      <button style="{{ btnPrimary }}">Выбрать файл</button>
+      <div style="color:var(--fade);font-size:12px;font-family:'IBM Plex Mono',monospace">до нескольких МБ · десятки тысяч строк</div>
+     </div>
+    </sc-if>
+    <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+     <div style="border:1px solid var(--bd);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;background:var(--surf2)">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font:500 13px 'IBM Plex Mono',monospace">logs_2026-11-09.txt</span><span style="color:var(--mut);font-size:13px">18,4 МБ</span></div>
+      <div style="height:8px;border-radius:99px;background:var(--bd);overflow:hidden"><div style="width:62%;height:100%;background:var(--acc);border-radius:99px"></div></div>
+      <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;flex-wrap:wrap"><span style="color:var(--mut)">Обработано 41 200 из 66 400 строк</span><span style="font-weight:600">62%</span></div>
+      <button style="{{ btnGhost }}">Отменить</button>
+     </div>
+    </sc-if>
+    <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+     <div style="border:1px solid var(--rbd);background:var(--rbg);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:20px;height:20px;border-radius:50%;background:var(--red);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none">!</span><div><div style="font-weight:600">Файл не похож на логи</div><div style="color:var(--mut);font-size:13px;margin-top:2px">Не найдено ни одной строки нужного формата</div></div></div>
+      <button style="{{ btnPrimary }}">Загрузить другой файл</button>
+     </div>
+    </sc-if>
+    <sc-if value="{{ isNoData }}" hint-placeholder-val="{{ false }}">
+     <div style="border:1px solid var(--abd);background:var(--abg);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+      <div style="font-weight:600">За выбранную дату для этой фракции строк нет</div>
+      <div style="color:var(--mut);font-size:13px">Проверьте дату и фракцию. Проигнорировано строк других фракций/дат: 66 412.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button style="{{ btnPrimary }}">Загрузить другой файл</button></div>
+     </div>
+    </sc-if>
+    <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+     <div style="border:1px solid var(--bd);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surf2);flex-wrap:wrap">
+      <div><div style="font:500 13px 'IBM Plex Mono',monospace">logs_2026-11-09.txt</div><div style="color:var(--mut);font-size:12.5px">18,4 МБ · 66 400 строк</div></div>
+      <button style="{{ btnGhost }}">Заменить файл</button>
+     </div>
+    </sc-if>
+    <sc-if value="{{ isGov }}" hint-placeholder-val="{{ false }}">
+     <div style="border:1px solid var(--dbd);border-radius:12px;padding:32px 20px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;color:var(--dtx)">
+      <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+      <div>Загрузка недоступна</div>
+      <button disabled="{{ true }}" style="height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--dbd);background:transparent;color:var(--dtx);font:500 13px 'IBM Plex Sans',sans-serif;cursor:not-allowed">Выбрать файл</button>
+     </div>
+    </sc-if>
+    <div style="color:var(--mut);font-size:12.5px;display:flex;gap:6px;align-items:center"><span style="width:6px;height:6px;border-radius:50%;background:var(--green)"></span>Файл обрабатывается в браузере и никуда не отправляется</div>
+   </div>
+  </div>
+
+  <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
+   <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:{{ cardPad }};display:grid;grid-template-columns:{{ sumCols }};gap:24px;align-items:center">
+     <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div style="color:var(--mut);font-size:13px">Итого за {{ dateText }} · {{ facName }}</div>
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+       <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}"><span style="font-size:{{ big }};font-weight:600;letter-spacing:-0.03em;color:var(--fade);text-decoration:line-through;text-decoration-thickness:2px">{{ raw }}</span><span style="font-size:{{ big }};color:var(--amber)">→</span></sc-if>
+       <span style="font-size:{{ big }};font-weight:600;letter-spacing:-0.03em;line-height:1;color:{{ totalColor }}">{{ shown }}</span>
+       <span style="font-size:22px;color:var(--mut);font-weight:500">/ 30 AP</span>
+      </div>
+      <div style="height:10px;border-radius:99px;background:var(--surf2);border:1px solid var(--bd);overflow:hidden"><div style="{{ barStyle }}"></div></div>
+     </div>
+     <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid var(--abd);background:var(--abg);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+       <div style="display:flex;align-items:center;gap:8px;color:var(--amber);font-weight:600;font-size:14px"><span style="width:18px;height:18px;border-radius:5px;background:var(--amber);color:var(--bg);display:grid;place-items:center;font-size:11px;font-weight:700">!</span>Лимит: засчитано 30</div>
+       <div style="display:flex;gap:20px;font-size:13px;color:var(--mut);flex-wrap:wrap"><span>набрано <b style="color:var(--tx);font-family:'IBM Plex Mono',monospace">{{ raw }}</b></span><span>урезано <b style="color:var(--amber);font-family:'IBM Plex Mono',monospace">{{ cut }}</b></span></div>
+      </div>
+     </sc-if>
+     <sc-if value="{{ under }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px solid var(--bd);background:var(--surf2);border-radius:12px;padding:16px 18px;font-size:13px;color:var(--mut)">До лимита осталось <b style="color:var(--tx);font-family:'IBM Plex Mono',monospace">{{ left }} AP</b></div>
+     </sc-if>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat({{ statCols }},minmax(0,1fr));gap:16px">
+     <sc-for list="{{ stats }}" as="x" hint-placeholder-count="4"><div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:8px"><div style="color:var(--mut);font-size:13px">{{ x.l }}</div><div style="font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1">{{ x.v }}</div><div style="font-size:12.5px;color:{{ x.c }}">{{ x.d }}</div></div></sc-for>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+     <div style="padding:18px {{ cardPad }} 14px;font-weight:600;font-size:15px">Достижения</div>
+     <div style="display:grid;grid-template-columns:{{ cols }};gap:12px;padding:8px {{ cardPad }};border-top:1px solid var(--bd);background:var(--surf2);color:var(--mut);font-size:12px;font-weight:500;align-items:center">
+      <span>Название</span><span style="display:{{ colD }}">За ед.</span><span style="display:{{ colD }}">Засчитано</span><span style="text-align:right">Итого</span><span></span></div>
+     <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+      <div style="border-top:1px solid var(--bd)">
+       <div onClick="{{ r.toggle }}" style="{{ r.rowSt }}">
+        <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:500">{{ r.name }}</span><span style="font-size:12px;color:var(--mut);display:{{ colM }}">{{ r.sub }}</span></span>
+        <span style="display:{{ colD }};font-family:'IBM Plex Mono',monospace">{{ r.pts }}</span>
+        <span style="display:{{ colD }}"><span style="{{ r.cntSt }}">×{{ r.n }}</span></span>
+        <span style="text-align:right;font:600 15px 'IBM Plex Mono',monospace">{{ r.sum }}</span>
+        <span style="{{ r.chev }}">▾</span>
+       </div>
+       <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:4px {{ cardPad }} 18px;display:flex;flex-direction:column;gap:12px">
+         <sc-if value="{{ r.empty }}" hint-placeholder-val="{{ false }}"><div style="color:var(--mut);font-size:13px">Выполнений не найдено.</div></sc-if>
+         <sc-for list="{{ r.groups }}" as="g" hint-placeholder-count="1">
+          <div style="display:flex;flex-direction:column;gap:6px">
+           <sc-if value="{{ g.title }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;font-weight:600;color:var(--mut)">{{ g.title }}</div></sc-if>
+           <div style="background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font:400 12.5px/1.7 'IBM Plex Mono',monospace;overflow-x:auto">
+            <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="3">
+             <div style="display:flex;gap:14px;white-space:nowrap"><span style="color:var(--fade);flex:none">{{ l.t }}</span><span><sc-for list="{{ l.parts }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.s }}</span></sc-for></span></div>
+            </sc-for>
+           </div>
+          </div>
+         </sc-for>
+        </div>
+       </sc-if>
+      </div>
+     </sc-for>
+    </div>
+
+    <div style="background:var(--surf);border:1px solid var(--abd);border-radius:14px;overflow:hidden">
+     <div style="padding:18px {{ cardPad }} 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-weight:600;font-size:15px">Спорные случаи</span><span style="font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--abg);color:var(--amber);border:1px solid var(--abd)">2</span><span style="color:var(--mut);font-size:13px">Похоже на достижение, но условие не выполнено</span></div>
+     <sc-for list="{{ disputes }}" as="r" hint-placeholder-count="2">
+      <div style="border-top:1px solid var(--abd)">
+       <div onClick="{{ r.toggle }}" style="display:flex;align-items:center;gap:12px;padding:14px {{ cardPad }};cursor:pointer;background:{{ r.bg }};flex-wrap:wrap">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex:none"></span>
+        <span style="font-weight:500;flex:1;min-width:140px">{{ r.name }}</span>
+        <span style="font:500 12.5px 'IBM Plex Mono',monospace;color:var(--amber);padding:3px 10px;border-radius:99px;background:var(--abg);border:1px solid var(--abd)">{{ r.note }}</span>
+        <span style="{{ r.chev }}">▾</span>
+       </div>
+       <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:4px {{ cardPad }} 18px;display:flex;flex-direction:column;gap:12px">
+         <sc-for list="{{ r.groups }}" as="g" hint-placeholder-count="1">
+          <div style="display:flex;flex-direction:column;gap:6px">
+           <div style="font-size:12.5px;font-weight:600;color:var(--mut)">{{ g.title }}</div>
+           <div style="background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font:400 12.5px/1.7 'IBM Plex Mono',monospace;overflow-x:auto">
+            <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="3">
+             <div style="display:flex;gap:14px;white-space:nowrap"><span style="color:var(--fade);flex:none">{{ l.t }}</span><span><sc-for list="{{ l.parts }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.s }}</span></sc-for></span></div>
+            </sc-for>
+           </div>
+          </div>
+         </sc-for>
+        </div>
+       </sc-if>
+      </div>
+     </sc-for>
+    </div>
+
+    <div style="background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:{{ cardPad }};display:flex;flex-direction:column;gap:18px">
+     <div><div style="font-weight:600;font-size:15px">Ручные достижения</div><div style="color:var(--mut);font-size:13px;margin-top:2px">Добавляются к итогу вручную, не определяются из логов</div></div>
+     <div style="display:grid;grid-template-columns:{{ manCols }};gap:12px">
+      <sc-for list="{{ manual }}" as="m" hint-placeholder-count="8">
+       <div style="{{ m.st }}">
+        <div style="min-width:0"><div style="font-size:13.5px;font-weight:500;line-height:1.3">{{ m.name }}</div><div style="font:500 12px 'IBM Plex Mono',monospace;color:var(--mut);margin-top:2px">{{ m.pts }} AP</div></div>
+        <div style="display:flex;align-items:center;gap:6px;flex:none">
+         <button aria-label="Уменьшить · {{ m.name }}" onClick="{{ m.dec }}" style="{{ btnSq }}">−</button><span style="min-width:20px;text-align:center;font:600 14px 'IBM Plex Mono',monospace">{{ m.n }}</span><button aria-label="Увеличить · {{ m.name }}" onClick="{{ m.inc }}" style="{{ btnSq }}">+</button>
+        </div>
+       </div>
+      </sc-for>
+     </div>
+     <div style="border-top:1px solid var(--bd);padding-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div><div style="font-weight:500">Ручная корректировка</div><div style="color:var(--mut);font-size:13px">+/− AP к итогу</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+       <button aria-label="Уменьшить корректировку" onClick="{{ adjDec }}" style="{{ btnSq }}">−</button><span style="min-width:44px;text-align:center;font:600 16px 'IBM Plex Mono',monospace">{{ adjText }}</span><button aria-label="Увеличить корректировку" onClick="{{ adjInc }}" style="{{ btnSq }}">+</button>
+      </div>
+     </div>
+    </div>
+    <div style="font-size:12px;color:var(--fade)">Проигнорировано строк других фракций/дат: 66 412</div>
+   </div>
+  </sc-if>
+ </div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty&quot;,&quot;loading&quot;,&quot;error&quot;,&quot;nodata&quot;,&quot;locked&quot;,&quot;result&quot;,&quot;overflow&quot;],&quot;default&quot;:&quot;empty&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;}}">
+const TH = {
+ dark: {bg:'#0b0b0c',surf:'#131313',surf2:'#1a1918',code:'#0d0d0d',bd:'#262423',tx:'#e8eaed',mut:'#a39e98',fade:'#6e6963',acc:'oklch(0.70 0.18 48)',accTx:'#160a03',green:'oklch(0.80 0.15 155)',gbg:'oklch(0.80 0.15 155 / 0.10)',gbd:'oklch(0.80 0.15 155 / 0.28)',amber:'oklch(0.84 0.14 92)',abg:'oklch(0.84 0.14 92 / 0.10)',abd:'oklch(0.84 0.14 92 / 0.30)',red:'oklch(0.74 0.15 25)',rbg:'oklch(0.74 0.15 25 / 0.10)',rbd:'oklch(0.74 0.15 25 / 0.30)',dbg:'#12151a',dbd:'#262423',dtx:'#a39e98',hl:'oklch(0.84 0.14 92)',hlbg:'oklch(0.84 0.14 92 / 0.14)'},
+ light: {bg:'#f6f4f1',surf:'#ffffff',surf2:'#f3f0ec',code:'#f8f6f3',bd:'#e5e0da',tx:'#14171c',mut:'#586170',fade:'#8a929e',acc:'oklch(0.60 0.19 45)',accTx:'#ffffff',green:'oklch(0.46 0.13 155)',gbg:'oklch(0.96 0.045 155)',gbd:'oklch(0.86 0.08 155)',amber:'oklch(0.50 0.12 65)',abg:'oklch(0.965 0.06 88)',abd:'oklch(0.86 0.10 85)',red:'oklch(0.50 0.18 25)',rbg:'oklch(0.965 0.03 25)',rbd:'oklch(0.86 0.08 25)',dbg:'#eceef1',dbd:'#d9dce2',dtx:'#586170',hl:'oklch(0.45 0.12 65)',hlbg:'oklch(0.92 0.10 90)'}
+};
+const CRIME = ['The Ballas Gang','Marabunta Grande','Los Santos Vagos','The Families','Bloods','Русская мафия','Итальянская мафия','Армянская мафия','Мексиканская мафия','Японская мафия'];
+const GOV = ['LSPD','LSSD','FIB','National Guard','Федеральная тюрьма','Weazel News','Мэрия ЛС','Medical Services'];
+const CRIME_EMBLEMS = ['ballas', 'marabunta', 'vagos', 'families', 'bloods', 'russian', 'italian', 'armenian', 'mexican', 'japanese'];
+const GOV_EMBLEMS = ['lspd', 'lssd', 'fib', 'national-guard', 'prison', 'weazel', 'city-hall', 'medical'];
+const emblem = (group, index) => './emblems/' + (group ? GOV_EMBLEMS : CRIME_EMBLEMS)[index] + '.svg';
+const L = (t, s) => ({t, parts: s.split('|').map((x, i) => ({s: x, h: i % 2 === 1}))});
+const EV = {
+ train: [{title:'Шаг 1: 12 участников', lines:[L('14:02:11','[Ballas] Marco_Diaz (#4521) |участвует в нападении| на поезд'),L('14:02:12','[Ballas] Jay_Carter (#3087) |участвует в нападении| на поезд'),L('14:02:15','[Ballas] Tony_Reed (#1190) |участвует в нападении| на поезд'),L('14:02:19','… ещё 9 строк')]},{title:'Шаг 2: доставка, 239 ящ.', lines:[L('14:31:40','[Ballas] Marco_Diaz (#4521) |доставляет грузовик|: 120 ящ.'),L('14:33:02','[Ballas] Tony_Reed (#1190) |доставляет грузовик|: 119 ящ.')]}],
+ cargo: [{title:'Шаг 1: 9 участников', lines:[L('16:10:05','[Ballas] Ray_Cole (#2210) |участвует в нападении| на конвой')]},{title:'Шаг 2: доставка, 214 ящ.', lines:[L('16:44:21','[Ballas] Ray_Cole (#2210) |доставляет грузовик|: 214 ящ.')]}],
+ house: [{title:'', lines:[L('18:05:33','[Ballas] Ray_Cole (#2210) |взламывает дом| №1204'),L('18:09:10','[Ballas] Jay_Carter (#3087) |взламывает дом| №877'),L('18:12:48','[Ballas] Tony_Reed (#1190) |взламывает дом| №2031')]}],
+ terr: [{title:'', lines:[L('20:00:02','[Ballas] |захватывает территорию| Grove Street, 14 участников')]}],
+ fight: [{title:'', lines:[L('21:15:09','[Ballas] Jay_Carter (#3087) |убил| LSPD Officer_Hale'),L('21:15:40','[Ballas] Marco_Diaz (#4521) |убил| LSPD Officer_Vance')]}]
+};
+const DISP = [
+ {name:'Нападение на поезд', note:'8 из 10 участников', groups:[{title:'Требуется 10 участников, найдено 8', lines:[L('19:02:11','[Ballas] Marco_Diaz (#4521) |участвует в нападении| на поезд'),L('19:02:14','[Ballas] Jay_Carter (#3087) |участвует в нападении| на поезд'),L('19:02:20','… ещё 6 строк')]}]},
+ {name:'Взлом домов', note:'27 из 30', groups:[{title:'Требуется 30 взломов, найдено 27', lines:[L('22:01:09','[Ballas] Ray_Cole (#2210) |взламывает дом| №311'),L('22:03:44','[Ballas] Tony_Reed (#1190) |взламывает дом| №902'),L('22:05:30','… ещё 25 строк')]}]}
+];
+const MAN = [['Организация мероприятия',2],['Помощь новичкам',1],['Победа в войне за территорию',3],['Работа с рекрутингом',1],['Участие в собрании фракции',1],['Урегулирование конфликта',1],['Взаимодействие с другой фракцией',2],['Активность на форуме',1]];
+class Component extends DCLogic {
+ state = {theme: null, tab: null, sel: 0, open: {}, tip: false, man: [0,0,0,0,0,0,0,0], adj: 0};
+ renderVals() {
+  const p = this.props, s = this.state;
+  const theme = s.theme || p.theme || 'dark', T = TH[theme];
+  const view = p.view || 'empty', width = +(p.width || 1440), mob = width < 700;
+  const tab = s.tab || (view === 'locked' ? 'gov' : 'crime'), gov = tab === 'gov';
+  const vars = Object.keys(T).map(k => '--' + k + ':' + T[k]).join(';');
+  const set = o => this.setState(o);
+  const tog = k => () => set(st => ({open: {...st.open, [k]: !st.open[k]}}));
+  const view2 = gov ? 'locked' : view;
+  const res = !gov && (view === 'result' || view === 'overflow');
+  const over = res && view === 'overflow';
+  const A = [['Нападение на поезд (2 шага)',5,over?3:1,'train'],['Доставка груза (2 шага)',4,over?4:2,'cargo'],['Взлом дома',1,over?6:3,'house'],['Захват территории',3,over?2:1,'terr'],['Перестрелка с гос. структурой',2,2,'fight'],['Ограбление магазина',2,0,'']];
+  const hlst = h => h ? `color:var(--hl);background:var(--hlbg);border-radius:3px;padding:0 3px` : 'color:var(--tx)';
+  const mapG = gs => gs.map(g => ({title: g.title, lines: g.lines.map(l => ({t: l.t, parts: l.parts.map(x => ({s: x.s, st: hlst(x.h)}))}))}));
+  let auto = 0;
+  const rows = A.map((a, i) => {
+   const k = 'r' + i, tot = a[1] * a[2]; auto += tot; const z = a[2] === 0, open = !!s.open[k];
+   return {name: a[0], pts: '+' + a[1], n: a[2], sum: z ? '0' : '+' + tot, sub: '+' + a[1] + ' за ед. · ×' + a[2], open, empty: z, groups: z ? [] : mapG(EV[a[3]]), toggle: tog(k),
+    rowSt: `display:grid;grid-template-columns:${mob?'1fr auto 20px':'1fr 120px 130px 110px 24px'};gap:12px;padding:14px ${mob?'16px':'28px'};align-items:center;cursor:pointer;background:${z?'transparent':'var(--gbg)'};opacity:${z?0.5:1};box-shadow:${z?'none':'inset 3px 0 0 var(--green)'}`,
+    cntSt: z ? 'color:var(--fade);font-family:IBM Plex Mono,monospace' : 'display:inline-block;color:var(--green);background:var(--gbg);border:1px solid var(--gbd);border-radius:99px;padding:1px 10px;font:500 12.5px IBM Plex Mono,monospace',
+    chev: `color:var(--mut);transition:transform .15s;transform:rotate(${open?180:0}deg);text-align:center`};
+  });
+  const disputes = DISP.map((d, i) => { const k = 'd' + i, open = !!s.open[k]; return {name: d.name, note: d.note, open, groups: mapG(d.groups), toggle: tog(k), bg: open ? 'var(--abg)' : 'transparent', chev: `color:var(--mut);transition:transform .15s;transform:rotate(${open?180:0}deg)`}; });
+  const manSum = s.man.reduce((a, n, i) => a + n * MAN[i][1], 0);
+  const raw = auto + manSum + s.adj, shown = Math.min(30, raw);
+  const manual = MAN.map((m, i) => ({name: m[0], pts: '+' + m[1], n: s.man[i],
+   st: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid ${s.man[i]?'var(--gbd)':'var(--bd)'};background:${s.man[i]?'var(--gbg)':'var(--surf2)'}`,
+   dec: () => set(st => { const a = st.man.slice(); a[i] = Math.max(0, a[i] - 1); return {man: a}; }),
+   inc: () => set(st => { const a = st.man.slice(); a[i]++; return {man: a}; })}));
+  const names = gov ? GOV : CRIME;
+  const chips = names.map((n, i) => { const sel = !gov && s.sel === i; return {name: n, emblem: emblem(gov, i), lock: gov, sel,
+   pick: gov ? () => set({tip: true}) : () => set({sel: i}), hov: () => {},
+   st: `display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;font:inherit;text-align:left;box-sizing:border-box;min-height:52px;cursor:${gov?'not-allowed':'pointer'};border:1px solid ${gov?'var(--dbd)':sel?'var(--acc)':'var(--bd)'};background:${gov?'var(--dbg)':sel?'var(--surf2)':'var(--surf)'};color:${gov?'var(--dtx)':'var(--tx)'};${sel?'box-shadow:0 0 0 1px var(--acc)':''}`}; });
+  const tabBase = `height:34px;padding:0 16px;border-radius:7px;border:0;font:500 13.5px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer;`;
+  const pad = mob ? '20px 16px 32px' : '32px 40px 56px';
+  const cols = mob ? '1fr auto 20px' : '1fr 120px 130px 110px 24px';
+  const btn = `height:38px;padding:0 16px;border-radius:8px;font:500 13.5px 'IBM Plex Sans',sans-serif;cursor:pointer;`;
+  const pct = Math.min(100, shown / 30 * 100);
+  return {
+   rootStyle: vars, theme, themeLabel: theme === 'dark' ? 'Тёмная' : 'Светлая', moonShadow: theme === 'dark' ? '-4px -3px 0 0 var(--surf2)' : '0 0 0 0 transparent',
+   toggleTheme: () => set({theme: theme === 'dark' ? 'light' : 'dark'}),
+   hdrPad: mob ? '14px 16px' : '14px 40px', pad, cardPad: mob ? '16px' : '28px', h1: mob ? '22px' : '28px',
+   stepNum: `width:22px;height:22px;border-radius:50%;border:1px solid var(--bd);background:var(--surf2);color:var(--mut);display:grid;place-items:center;font:500 12px 'IBM Plex Mono',monospace`,
+   tabCrimeStyle: tabBase + (!gov ? 'background:var(--surf);color:var(--tx);box-shadow:0 1px 2px rgba(0,0,0,.25)' : 'background:transparent;color:var(--mut)'),
+   tabGovStyle: tabBase + (gov ? 'background:var(--dbg);color:var(--dtx);cursor:not-allowed;box-shadow:inset 0 0 0 1px var(--dbd)' : 'background:transparent;color:var(--dtx);cursor:not-allowed'),
+   setCrime: () => set({tab: 'crime'}), setGov: () => set({tab: 'gov', tip: true}), tipOn: () => set({tip: true}), tipOff: () => set({tip: false}),
+   showTip: gov && (s.tip || view === 'locked'), gov, isGov: gov,
+   chips, chipGrid: `display:grid;grid-template-columns:repeat(${width < 450 ? 1 : mob ? 2 : width < 960 ? 3 : gov ? 4 : 5},minmax(0,1fr));gap:10px`,
+   twoCol: mob ? '1fr' : 'minmax(0,5fr) minmax(0,7fr)',
+   cardDis2: `background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:${mob?'16px':'28px'};display:flex;flex-direction:column;gap:20px;align-self:start;${gov?'opacity:.55':''}`,
+   cardDis3: `background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:${mob?'16px':'28px'};display:flex;flex-direction:column;gap:16px;${gov?'opacity:.55':''}`,
+   dateText: view2 === 'empty' || gov ? '— — —' : '09.11.2026', dateHint: gov ? 'Недоступно' : view2 === 'empty' ? 'Определится автоматически из логов' : 'Определена из логов · можно изменить',
+   isEmpty: view2 === 'empty', isLoading: view2 === 'loading', isError: view2 === 'error', isNoData: view2 === 'nodata', isResult: res,
+   dropStyle: 'border:1.5px dashed var(--bd);border-radius:12px;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;background:var(--surf2)',
+   btnPrimary: btn + 'border:0;background:var(--acc);color:var(--accTx);', btnGhost: btn + 'border:1px solid var(--bd);background:transparent;color:var(--tx);align-self:flex-start;',
+   btnSq: 'width:30px;height:30px;border-radius:7px;border:1px solid var(--bd);background:var(--surf);color:var(--tx);font:500 16px IBM Plex Mono,monospace;cursor:pointer;line-height:1;padding:0',
+   hasResult: res, over, under: !over, raw, shown, cut: Math.max(0, raw - 30), left: Math.max(0, 30 - raw), facName: CRIME[s.sel],
+   big: mob ? '56px' : '72px', sumCols: mob || !over ? '1fr' : 'minmax(0,1fr) 340px',
+   totalColor: over ? 'var(--amber)' : 'var(--tx)',
+   barStyle: `width:${pct}%;height:100%;border-radius:99px;background:${over?'var(--amber)':'var(--acc)'}`,
+   statCols: mob ? 2 : 4, stats: [{l:'Подтверждено',v:rows.filter(r=>r.n>0).length+' из '+rows.length,d:'достижений из логов',c:'var(--green)'},{l:'Из логов',v:'+'+auto,d:'AP автоматически',c:'var(--mut)'},{l:'Вручную',v:(manSum+s.adj>=0?'+':'−')+Math.abs(manSum+s.adj),d:'AP, ручные и корректировка',c:'var(--mut)'},{l:'Спорных',v:'2',d:'требуют проверки',c:'var(--amber)'}],
+   rows, cols, colD: mob ? 'none' : 'block', colM: mob ? 'block' : 'none', disputes, manual, manCols: mob ? '1fr' : 'repeat(2,minmax(0,1fr))',
+   adjText: (s.adj > 0 ? '+' : s.adj < 0 ? '−' : '') + Math.abs(s.adj), adjDec: () => set(st => ({adj: st.adj - 1})), adjInc: () => set(st => ({adj: st.adj + 1}))
+  };
+ }
+}
+
+</script>
+</body>
+</html>

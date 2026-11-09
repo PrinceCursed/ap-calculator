@@ -6,6 +6,8 @@ export type ToWorker =
 
 export interface LoadInfo {
   files: string[];
+  /** Суммарный размер файлов в байтах. */
+  bytes: number;
   total: number;
   parsed: number;
   skipped: number;

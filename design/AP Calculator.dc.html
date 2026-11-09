@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>AP Calculator · Макеты</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet"></helmet>
+<div style="background:#2b2e34;padding:60px;display:flex;flex-direction:column;gap:64px;width:3000px;font-family:'IBM Plex Mono',monospace;color:#c9ccd2">
+ <div style="font-size:28px;color:#fff">AP Calculator · дизайн 1a · тёмная (слева) и светлая (справа) темы</div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Токены, типографика, компоненты</div><div style="display:flex;gap:40px"><dc-import name="AP Kit" theme="dark" style="width:1440px" hint-size="1440px,900px"></dc-import><dc-import name="AP Kit" theme="light" style="width:1440px" hint-size="1440px,900px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Пусто (до загрузки)</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="empty" style="width:1440px" hint-size="1440px,900px"></dc-import><dc-import name="AP Screen" theme="light" view="empty" style="width:1440px" hint-size="1440px,900px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Обработка с прогрессом</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="loading" style="width:1440px" hint-size="1440px,900px"></dc-import><dc-import name="AP Screen" theme="light" view="loading" style="width:1440px" hint-size="1440px,900px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Ошибка: файл не похож на логи</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="error" style="width:1440px" hint-size="1440px,900px"></dc-import><dc-import name="AP Screen" theme="light" view="error" style="width:1440px" hint-size="1440px,900px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Нет строк за дату</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="nodata" style="width:1440px" hint-size="1440px,900px"></dc-import><dc-import name="AP Screen" theme="light" view="nodata" style="width:1440px" hint-size="1440px,900px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Группа «Гос» заблокирована (подсказка, замок, «Скоро»)</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="locked" style="width:1440px" hint-size="1440px,900px"></dc-import><dc-import name="AP Screen" theme="light" view="locked" style="width:1440px" hint-size="1440px,900px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Результат: 23 / 30 (строки раскрываются, счётчики работают)</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="result" style="width:1440px" hint-size="1440px,1800px"></dc-import><dc-import name="AP Screen" theme="light" view="result" style="width:1440px" hint-size="1440px,1800px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Результат: лимит 47 → 30</div><div style="display:flex;gap:40px"><dc-import name="AP Screen" theme="dark" view="overflow" style="width:1440px" hint-size="1440px,1800px"></dc-import><dc-import name="AP Screen" theme="light" view="overflow" style="width:1440px" hint-size="1440px,1800px"></dc-import></div></div>
+ <div style="display:flex;flex-direction:column;gap:16px"><div>Мобильная версия · 390 px</div><div style="display:flex;gap:40px;align-items:flex-start"><dc-import name="AP Screen" theme="dark" view="empty" width="390" style="width:390px" hint-size="390px,1000px"></dc-import><dc-import name="AP Screen" theme="light" view="overflow" width="390" style="width:390px" hint-size="390px,1800px"></dc-import><dc-import name="AP Screen" theme="dark" view="locked" width="390" style="width:390px" hint-size="390px,1000px"></dc-import><dc-import name="AP Screen" theme="light" view="loading" width="390" style="width:390px" hint-size="390px,1000px"></dc-import></div></div>
+</div>
+
+</x-dc>
+</body>
+</html>

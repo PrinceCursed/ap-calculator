@@ -26,8 +26,16 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
     if (msg.type === 'load') {
       post({ type: 'progress', phase: 'read', done: 0, total: msg.files.length });
       const files: { name: string; text: string }[] = [];
+      let bytes = 0;
       for (const f of msg.files) {
-        files.push('text' in f && typeof f.text === 'string' ? (f as { name: string; text: string }) : { name: f.name, text: await (f as File).text() });
+        if (typeof (f as { text: unknown }).text === 'string') {
+          const t = f as { name: string; text: string };
+          files.push(t);
+          bytes += t.text.length;
+        } else {
+          files.push({ name: f.name, text: await (f as File).text() });
+          bytes += (f as File).size;
+        }
       }
       let last = 0;
       loaded = loadFiles(files, (done, total) => {
@@ -39,7 +47,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       });
       post({
         type: 'loaded',
-        info: { files: files.map((f) => f.name), total: loaded.total, parsed: loaded.lines.length, skipped: loaded.skipped, duplicates: loaded.duplicates },
+        info: { files: files.map((f) => f.name), bytes, total: loaded.total, parsed: loaded.lines.length, skipped: loaded.skipped, duplicates: loaded.duplicates },
       });
       if (loaded.lines.length === 0) {
         post({ type: 'error', code: 'not-logs', message: 'Файл не похож на логи' });
