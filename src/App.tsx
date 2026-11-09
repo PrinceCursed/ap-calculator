@@ -3,6 +3,7 @@ import { findFaction, GROUPS, isFactionSelectable } from './config';
 import type { ManualRule } from './config/types';
 import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
+import { FactionLogo } from './components/FactionLogo';
 import { FactionPicker } from './components/FactionPicker';
 import { AchievementsTable, DisputedList, ManualPanel, Summary } from './components/Results';
 import { FileIcon, LockIcon, MoonIcon, ShieldIcon, SunIcon, UploadIcon } from './components/icons';
@@ -336,6 +337,7 @@ export default function App() {
         <main className="content">
           {analysis?.date && result && group.enabled && (
             <div className="content-head">
+              {faction && <FactionLogo key={faction.id} faction={faction} size={36} />}
               <h1>{faction?.name}</h1>
               <span className="muted">{analysis.date}</span>
             </div>

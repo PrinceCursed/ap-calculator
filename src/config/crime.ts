@@ -9,17 +9,18 @@ export const crime: FactionGroup = {
   title: 'Crime',
   enabled: true,
   dailyCap: 30,
+  // id = слаг логотипа public/factions/<id>.webp. Алиасы сравниваются без учёта регистра, «ё» и лишних пробелов.
   factions: [
-    { id: 'ballas', name: 'The Ballas Gang', aliases: ['The Ballas Gang', 'Ballas Gang', 'Ballas', 'Баллас'] },
-    { id: 'marabunta', name: 'Marabunta Grande', aliases: ['Marabunta Grande', 'Marabunta', 'Марабунта'] },
-    { id: 'vagos', name: 'Los Santos Vagos', aliases: ['Los Santos Vagos', 'LS Vagos', 'Vagos', 'Вагос'] },
-    { id: 'families', name: 'The Families', aliases: ['The Families', 'Families', 'Фемили', 'Фэмилис'] },
-    { id: 'bloods', name: 'Bloods', aliases: ['Bloods', 'The Bloods', 'Bloods Gang', 'Бладс'] },
-    { id: 'rm', name: 'Русская Мафия', aliases: ['Русская Мафия', 'Russian Mafia', 'РМ'] },
-    { id: 'lcn', name: 'Итальянская Мафия', aliases: ['Итальянская Мафия', 'Italian Mafia', 'La Cosa Nostra', 'LCN'] },
-    { id: 'am', name: 'Армянская Мафия', aliases: ['Армянская Мафия', 'Armenian Mafia'] },
-    { id: 'mm', name: 'Мексиканская Мафия', aliases: ['Мексиканская Мафия', 'Mexican Mafia'] },
-    { id: 'yakuza', name: 'Японская Мафия', aliases: ['Японская Мафия', 'Japanese Mafia', 'Yakuza', 'Якудза'] },
+    { id: 'ballas', name: 'The Ballas Gang', aliases: ['East Side Ballas', 'Ballas', 'Ballas Gang', 'Баллас'] },
+    { id: 'marabunta', name: 'Marabunta Grande', aliases: ['Marabunta', 'Марабунта'] },
+    { id: 'vagos', name: 'Los Santos Vagos', aliases: ['LS Vagos', 'Vagos', 'Вагос'] },
+    { id: 'families', name: 'The Families', aliases: ['Families', 'Фемили', 'Фэмилис'] },
+    { id: 'bloods', name: 'Bloods', aliases: ['The Bloods', 'Bloods Gang', 'Бладс'] },
+    { id: 'rm', name: 'Русская Мафия', aliases: ['Russian Mafia', 'РМ'] },
+    { id: 'lcn', name: 'Итальянская Мафия', aliases: ['Italian Mafia', 'La Cosa Nostra', 'LCN'] },
+    { id: 'am', name: 'Армянская Мафия', aliases: ['Armenian Mafia'] },
+    { id: 'mm', name: 'Мексиканская Мафия', aliases: ['Mexican Mafia'] },
+    { id: 'yak', name: 'Японская Мафия', aliases: ['Japanese Mafia', 'Yakuza', 'Якудза'] },
   ],
   rules: [
     // 1–2. ФЗ / NG: группы выгрузок из армейских грузовиков. Тип — по наличию ЭМИ-строки перед группой.

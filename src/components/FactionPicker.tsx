@@ -1,4 +1,5 @@
 import type { FactionGroup } from '../config/types';
+import { FactionLogo } from './FactionLogo';
 import { LockIcon } from './icons';
 
 interface Props {
@@ -51,7 +52,7 @@ export function FactionPicker({ groups, groupId, factionId, onGroup, onFaction }
               onClick={() => !disabled && onFaction(f.id)}
               title={disabled ? group.disabledHint : undefined}
             >
-              <span className="faction-dot" />
+              <FactionLogo faction={f} />
               <span className="faction-name">{f.name}</span>
               {disabled && (
                 <span className="faction-lock">
