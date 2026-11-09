@@ -37,6 +37,8 @@ export function Summary(props: {
   fileName: string;
   fileSize: number;
   lines: number;
+  /** Лог покрывает сутки не полностью. */
+  partial?: boolean;
 }) {
   const c = applyCap(props.auto + props.manual + props.adjust, props.cap);
   return (
@@ -51,7 +53,9 @@ export function Summary(props: {
             </>
           )}
           <span className="summary-shown">{c.total}</span>
-          <span className="summary-cap">/ {props.cap} AP</span>
+          <span className="summary-cap">
+            / {props.cap} AP{props.partial && c.total < props.cap ? ' (по неполному логу)' : ''}
+          </span>
         </div>
         <div className="bar">
           <div className={`bar-fill ${c.capped ? 'is-amber' : ''}`} style={{ width: `${Math.min(100, (c.total / props.cap) * 100)}%` }} />
@@ -105,6 +109,7 @@ export function AchievementsTable({ items }: { items: AchievementResult[] }) {
     <div className="panel">
       <div className="trow thead ach-cols">
         <span>Достижение</span>
+        <span className="only-desk">Найдено в файле</span>
         <span className="only-desk">За ед.</span>
         <span className="only-desk">Засчитано</span>
         <span className="right">Итого</span>
@@ -113,10 +118,12 @@ export function AchievementsTable({ items }: { items: AchievementResult[] }) {
       {items.map((a) => {
         const isOpen = !!open[a.id];
         const zero = a.count === 0;
+        const partial = zero && a.progress.found > 0;
         return (
           <div className="tgroup" key={a.id}>
             <div
-              className={`trow ach-cols is-click ${zero ? 'is-zero' : 'is-ok'}`}
+              className={`trow ach-cols is-click ${partial ? 'is-partial' : zero ? 'is-zero' : 'is-ok'}`}
+              data-testid={`ach-${a.id}`}
               onClick={() => toggle(a.id)}
               role="button"
               tabIndex={0}
@@ -125,14 +132,17 @@ export function AchievementsTable({ items }: { items: AchievementResult[] }) {
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle(a.id))}
             >
               <span className="tname">
-                <span className={`dot ${zero ? 'dot-empty' : 'dot-acc'}`} />
+                <span className={`dot ${partial ? 'dot-amber' : zero ? 'dot-empty' : 'dot-acc'}`} />
                 <span className="tname-text">
                   <span>{a.title}</span>
                   <span className="only-mob small muted">
-                    +{a.unitPoints} за ед. · ×{a.count}
+                    +{a.unitPoints} за ед. · ×{a.count} · {a.progress.text}
                   </span>
                   {a.droppedByOncePerDay ? <span className="small muted">раз в день: отброшено {a.droppedByOncePerDay}</span> : null}
                 </span>
+              </span>
+              <span className={`only-desk mono small ${partial ? 'amber' : 'muted'}`} data-testid={`progress-${a.id}`}>
+                {a.progress.text}
               </span>
               <span className="only-desk mono muted">+{a.unitPoints}</span>
               <span className="only-desk mono">{a.count}</span>

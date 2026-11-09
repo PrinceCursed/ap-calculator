@@ -33,6 +33,18 @@ export interface Occurrence {
   steps: EvStep[];
 }
 
+/** Прогресс к порогу — показывается всегда, даже если ничего не засчитано. */
+export interface Progress {
+  /** Лучшее найденное значение (строк / уникальных участников / грузовиков …). */
+  found: number;
+  /** Порог для одного засчитанного события. */
+  need: number;
+  /** Подпись единиц. */
+  unit: string;
+  /** Готовый текст: «1 из 30 домов», «8 из 10 участников», «33 домов». */
+  text: string;
+}
+
 export interface AchievementResult {
   /** id строки таблицы (правило, вариант или тир). */
   id: string;
@@ -43,6 +55,7 @@ export interface AchievementResult {
   count: number;
   total: number;
   occurrences: Occurrence[];
+  progress: Progress;
   /** Сколько событий отброшено из-за oncePerDay. */
   droppedByOncePerDay?: number;
 }
@@ -59,6 +72,8 @@ export interface EngineResult {
   achievements: AchievementResult[];
   disputed: DisputedCase[];
   autoSum: number;
+  /** Строки выбранного дня, не подошедшие ни под одно правило. */
+  unmatched: { count: number; top: { text: string; count: number }[] };
 }
 
 export interface DayRange {
@@ -138,6 +153,12 @@ function shortOf(d: number, min: number, label: string, forms?: [string, string,
 const span = (g: Hit[]) =>
   g.length === 1 ? g[0].line.time : `${g[0].line.time}–${g[g.length - 1].line.time}`;
 
+function progress(found: number, need: number, unit: string, counted: boolean, matched: number, forms?: [string, string, string]): Progress {
+  const text = counted ? `найдено ${matched} ${unitWord(matched, unit, forms)}` : forms ? `${found} ${plural(found, forms)} из ${need}` : `${found} из ${need} ${unit}`;
+  return { found, need, unit, text };
+}
+const unitWord = (n: number, unit: string, forms?: [string, string, string]) => (forms ? plural(n, forms) : unit);
+
 function makeResult(
   id: string,
   ruleId: string,
@@ -145,7 +166,8 @@ function makeResult(
   unitPoints: number,
   occurrences: Occurrence[],
   oncePerDay: boolean | undefined,
-  hint?: string,
+  hint: string | undefined,
+  prog: (counted: boolean) => Progress,
 ): AchievementResult {
   let occ = occurrences;
   let dropped: number | undefined;
@@ -153,7 +175,14 @@ function makeResult(
     dropped = occ.length - 1;
     occ = occ.slice(0, 1);
   }
-  return { id, ruleId, title, hint, unitPoints, count: occ.length, total: occ.length * unitPoints, occurrences: occ, droppedByOncePerDay: dropped };
+  return {
+    id, ruleId, title, hint, unitPoints,
+    count: occ.length,
+    total: occ.length * unitPoints,
+    occurrences: occ,
+    progress: prog(occ.length > 0),
+    droppedByOncePerDay: dropped,
+  };
 }
 
 let disputedSeq = 0;
@@ -171,7 +200,8 @@ function runPerLine(rule: PerLineRule, lines: LogLine[], day: DayRange, out: Eng
   const list = hits(lines.filter((l) => inDay(day, l)), compileMatcher(rule));
   if (!rule.tiers?.length) {
     const occ = list.map((h) => ({ label: `${h.line.time} — ${ev(h).nick}`, steps: [{ label: 'Строка лога', lines: [ev(h)] }] }));
-    out.achievements.push(makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint));
+    const unit = rule.unitLabel ?? 'строк';
+    out.achievements.push(makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint, (c) => progress(list.length, 1, unit, c, list.length)));
     return;
   }
   const tiers = [...rule.tiers].sort((a, b) => b.min - a.min);
@@ -192,7 +222,9 @@ function runPerLine(rule: PerLineRule, lines: LogLine[], day: DayRange, out: Eng
   }
   // Порядок строк таблицы — как в конфиге.
   for (const t of rule.tiers) {
-    out.achievements.push(makeResult(t.id, rule.id, t.title, t.points, byTier.get(t.id)!, rule.oncePerDay, `${rule.hint ?? ''}`.trim() || undefined));
+    const n = byTier.get(t.id)!.length;
+    const unit = rule.unitLabel ?? 'строк';
+    out.achievements.push(makeResult(t.id, rule.id, t.title, t.points, byTier.get(t.id)!, rule.oncePerDay, rule.hint, (c) => progress(n, 1, unit, c, n)));
   }
 }
 
@@ -204,7 +236,9 @@ function runPerCount(rule: PerCountRule, lines: LogLine[], day: DayRange, out: E
     const chunk = list.slice(i * rule.per, (i + 1) * rule.per);
     occ.push({ label: `Раз ${i + 1}: ${chunk.length} ${rule.unitLabel} (${span(chunk)})`, steps: [{ label: `${chunk.length} ${rule.unitLabel}`, lines: chunk.map(ev) }] });
   }
-  out.achievements.push(makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint));
+  out.achievements.push(
+    makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint, (c) => progress(list.length, rule.per, rule.unitLabel, c, list.length)),
+  );
   const rest = list.length % rule.per;
   if (rest > 0) {
     const chunk = list.slice(full * rule.per);
@@ -217,9 +251,13 @@ function runPerCount(rule: PerCountRule, lines: LogLine[], day: DayRange, out: E
 function runCluster(rule: ClusterRule, lines: LogLine[], day: DayRange, out: EngineResult) {
   const list = hits(lines, compileMatcher(rule));
   const occ: Occurrence[] = [];
+  let best = 0;
+  let matched = 0;
   for (const g of groupByGap(list, rule.gapMinutes)) {
     if (!inDay(day, g[0].line)) continue; // группа относится к дню своей первой строки
     const d = distinctValues(g, rule.distinctBy).size;
+    best = Math.max(best, d);
+    matched += g.length;
     const step = { label: `${d} ${rule.distinctLabel}, ${g.length} строк`, lines: g.map(ev) };
     if (d >= rule.minDistinct) occ.push({ label: `${span(g)} — ${d} ${rule.distinctLabel}`, steps: [step] });
     else out.disputed.push(dispute(rule.id, rule.title, shortOf(d, rule.minDistinct, rule.distinctLabel, rule.distinctForms), [step]));
@@ -227,9 +265,15 @@ function runCluster(rule: ClusterRule, lines: LogLine[], day: DayRange, out: Eng
   if (rule.soloPhrases?.length) {
     const solo = hits(lines.filter((l) => inDay(day, l)), compileMatcher({ phrases: rule.soloPhrases, actor: rule.actor }));
     for (const h of solo) occ.push({ label: `${h.line.time} — ${ev(h).nick}`, steps: [{ label: 'Строка лога', lines: [ev(h)] }] });
+    matched += solo.length;
+    if (solo.length) best = Math.max(best, rule.minDistinct);
     occ.sort((a, b) => (a.steps[0].lines[0].time < b.steps[0].lines[0].time ? -1 : 1));
   }
-  out.achievements.push(makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint));
+  out.achievements.push(
+    makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint, (c) =>
+      progress(best, rule.minDistinct, rule.distinctLabel, c, matched, c ? undefined : rule.distinctForms),
+    ),
+  );
 }
 
 function runVariantCluster(rule: VariantClusterRule, lines: LogLine[], day: DayRange, out: EngineResult) {
@@ -237,6 +281,8 @@ function runVariantCluster(rule: VariantClusterRule, lines: LogLine[], day: DayR
   const pre = rule.variants.map((v) => (v.requiresPreceding ? hits(lines, compileMatcher(v.requiresPreceding)) : null));
   const used = new Set<LogLine>();
   const occ = new Map<string, Occurrence[]>(rule.variants.map((v) => [v.id, []]));
+  const best = new Map<string, number>(rule.variants.map((v) => [v.id, 0]));
+  const matched = new Map<string, number>(rule.variants.map((v) => [v.id, 0]));
 
   for (const g of groupByGap(list, rule.gapMinutes)) {
     const first = g[0].line;
@@ -261,6 +307,8 @@ function runVariantCluster(rule: VariantClusterRule, lines: LogLine[], day: DayR
     }
     const v = rule.variants[variantIdx];
     const d = distinctValues(g, rule.distinctBy).size;
+    best.set(v.id, Math.max(best.get(v.id)!, d));
+    matched.set(v.id, matched.get(v.id)! + g.length);
     const steps: EvStep[] = [];
     if (preHit) steps.push({ label: `Шаг 1: ${v.requiresPreceding!.label}`, lines: [ev(preHit)] });
     steps.push({ label: `${preHit ? 'Шаг 2: ' : ''}выгрузки — ${d} ${rule.distinctLabel}, ${g.length} строк`, lines: g.map(ev) });
@@ -272,7 +320,11 @@ function runVariantCluster(rule: VariantClusterRule, lines: LogLine[], day: DayR
     }
   }
   for (const v of rule.variants) {
-    out.achievements.push(makeResult(v.id, rule.id, v.title, v.points, occ.get(v.id)!, rule.oncePerDay, rule.hint));
+    out.achievements.push(
+      makeResult(v.id, rule.id, v.title, v.points, occ.get(v.id)!, rule.oncePerDay, rule.hint, (c) =>
+        progress(best.get(v.id)!, rule.minDistinct, rule.distinctLabel, c, matched.get(v.id)!, c ? undefined : rule.distinctForms),
+      ),
+    );
   }
 }
 
@@ -283,12 +335,14 @@ function runSequence(rule: SequenceRule, lines: LogLine[], day: DayRange, out: E
   const seen = new Set<LogLine>();
   const occ: Occurrence[] = [];
   const { minDistinct, windowMinutes, label } = rule.step1;
+  let best = 0;
 
   for (const f of finals) {
     const cand = s1.filter(
       (h) => !used.has(h.line) && compareLines(h.line, f.line) < 0 && h.line.ts >= f.line.ts - windowMinutes * MIN,
     );
     const d = distinctValues(cand, 'static').size;
+    best = Math.max(best, d);
     const n = f.m.n;
     const numOk = rule.final.minNumber === undefined || (n !== undefined && n >= rule.final.minNumber);
     const numText = n !== undefined ? `, ${n} ${rule.final.numberUnit ?? ''}`.trimEnd() : '';
@@ -317,12 +371,17 @@ function runSequence(rule: SequenceRule, lines: LogLine[], day: DayRange, out: E
   const orphans = s1.filter((h) => inDay(day, h.line) && !used.has(h.line) && !seen.has(h.line));
   for (const g of groupByGap(orphans, windowMinutes)) {
     const d = distinctValues(g, 'static').size;
+    best = Math.max(best, d);
     out.disputed.push(
       dispute(rule.id, rule.title, `${d} ${label}, но нет строки «${rule.final.label}»`, [{ label: `Шаг 1: ${d} ${label}`, lines: g.map(ev) }]),
     );
   }
 
-  out.achievements.push(makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint));
+  out.achievements.push(
+    makeResult(rule.id, rule.id, rule.title, rule.points, occ, rule.oncePerDay, rule.hint, (c) =>
+      c ? progress(best, minDistinct, label, true, occ.length, ['событие', 'события', 'событий']) : progress(best, minDistinct, label, false, 0),
+    ),
+  );
 }
 
 // ───────────────────────── Вход ─────────────────────────
@@ -334,7 +393,7 @@ function runSequence(rule: SequenceRule, lines: LogLine[], day: DayRange, out: E
  */
 export function runRules(rules: Rule[], lines: LogLine[], day: DayRange): EngineResult {
   const sorted = [...lines].sort(compareLines);
-  const out: EngineResult = { achievements: [], disputed: [], autoSum: 0 };
+  const out: EngineResult = { achievements: [], disputed: [], autoSum: 0, unmatched: { count: 0, top: [] } };
   disputedSeq = 0;
   for (const rule of rules) {
     switch (rule.type) {
@@ -358,6 +417,7 @@ export function runRules(rules: Rule[], lines: LogLine[], day: DayRange): Engine
     }
   }
   out.autoSum = out.achievements.reduce((s, a) => s + a.total, 0);
+  out.unmatched = unmatchedLines(rules, sorted, day);
   return out;
 }
 
@@ -365,4 +425,44 @@ export function runRules(rules: Rule[], lines: LogLine[], day: DayRange): Engine
 export function applyCap(sum: number, cap: number) {
   const total = Math.max(0, Math.min(sum, cap));
   return { sum, total, cut: Math.max(0, sum - cap), capped: sum > cap };
+}
+
+/** Все фразы всех правил — чтобы найти строки дня, которые не подошли ни под одно достижение. */
+function allMatchers(rules: Rule[]) {
+  const ms: { phrases: string[]; excludePhrases?: string[]; actor?: PerLineRule['actor'] }[] = [];
+  for (const r of rules) {
+    if (r.type === 'perLine' || r.type === 'perCount') ms.push(r);
+    else if (r.type === 'cluster') {
+      ms.push(r);
+      if (r.soloPhrases) ms.push({ phrases: r.soloPhrases });
+    } else if (r.type === 'variantCluster') {
+      ms.push(r);
+      for (const v of r.variants) if (v.requiresPreceding) ms.push(v.requiresPreceding);
+    } else if (r.type === 'sequence') ms.push(r.step1, r.final);
+  }
+  // для диагностики игнорируем actor/exclude: важно, «похожа» ли строка на достижение
+  return ms.map((m) => compileMatcher({ phrases: m.phrases }));
+}
+
+/** Начало текста для группировки: первые 3 слова без чисел в конце («Берет набор Броня…»). */
+export function textStart(text: string): string {
+  return text.split(' ').slice(0, 3).join(' ').replace(/[:,.]+$/, '');
+}
+
+function unmatchedLines(rules: Rule[], sorted: LogLine[], day: DayRange) {
+  const ms = allMatchers(rules);
+  const counts = new Map<string, number>();
+  let count = 0;
+  for (const l of sorted) {
+    if (!inDay(day, l)) continue;
+    if (ms.some((m) => m.test(l))) continue;
+    count++;
+    const k = textStart(l.text);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  const top = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([text, c]) => ({ text, count: c }));
+  return { count, top };
 }

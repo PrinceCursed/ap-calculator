@@ -6,6 +6,7 @@ import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
 import { FactionLogo } from './components/FactionLogo';
 import { FactionPicker } from './components/FactionPicker';
+import { CoverageWarning, DateSummary, Diagnostics, FoundInFile } from './components/Diagnostics';
 import {
   AchievementsTable,
   DisputedTable,
@@ -201,6 +202,16 @@ export default function App() {
             </div>
           </div>
         </div>
+        {info && info.unparsedExamples.length > 0 && (
+          <div className="diag-list small">
+            <div className="kicker">ПРИМЕРЫ СТРОК ИЗ ФАЙЛА</div>
+            <ul className="mono">
+              {info.unparsedExamples.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <button className="btn btn-outline" onClick={pick}>
           Выбрать другой файл
         </button>
@@ -215,15 +226,24 @@ export default function App() {
             {analysis.factionLines ? 'Проверьте дату и фракцию.' : `В логах нет строк фракции «${faction.name}». Проверьте фракцию.`}
           </div>
         </div>
+        <FoundInFile analysis={analysis} onFaction={chooseFaction} />
         <div className="small fade">
           Проигнорировано строк других фракций и дат: {fmt(analysis.ignoredOtherFaction + analysis.ignoredOtherDate)}
         </div>
+        {info && <Diagnostics analysis={analysis} info={info} />}
       </div>
     );
   } else if (analysis && result && info) {
     body = (
       <div className="result">
+        {(analysis.dates.length > 1 || analysis.coverage?.partial) && (
+          <div className="result-notes">
+            <DateSummary dates={analysis.dates} current={analysis.date} onPick={chooseDate} />
+            {analysis.coverage && <CoverageWarning coverage={analysis.coverage} />}
+          </div>
+        )}
         <Summary
+          partial={!!analysis.coverage?.partial}
           auto={result.autoSum}
           manual={manualSum}
           adjust={adjust}
@@ -252,6 +272,7 @@ export default function App() {
             {' · '}пропущено нераспознанных строк: {fmt(info.skipped)}
             {info.duplicates ? ` · дубликатов: ${fmt(info.duplicates)}` : ''}
           </div>
+          <Diagnostics analysis={analysis} info={info} />
         </div>
       </div>
     );

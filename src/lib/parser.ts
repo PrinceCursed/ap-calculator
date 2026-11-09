@@ -46,7 +46,7 @@ export function normFaction(s: string): string {
     .trim();
 }
 
-const DATE_TAIL = /(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/;
+const DATE_TAIL = /(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/;
 const ID_HEAD = /^\s*(\d+)(?:\t+|\s+)/;
 const NICK = /^(.*?)\s*\[(\d+)\]$/;
 const SPLIT = /\t+|\s{2,}/;
@@ -143,6 +143,8 @@ export interface ParseStats {
   total: number;
   parsed: number;
   skipped: number;
+  /** До 5 примеров неразобранных строк (обрезаны до 200 символов). */
+  examples: string[];
 }
 
 /**
@@ -154,6 +156,7 @@ export function parseLog(
 ): { lines: LogLine[]; stats: ParseStats } {
   const rows = text.split('\n');
   const lines: LogLine[] = [];
+  const examples: string[] = [];
   let skipped = 0;
   let total = 0;
   const chunk = opts.chunk ?? 2000;
@@ -163,12 +166,15 @@ export function parseLog(
       total++;
       const out = parseLine(r, i + 1, opts.knownFactions, opts.file ?? 0);
       if (out.line) lines.push(out.line);
-      else skipped++;
+      else {
+        skipped++;
+        if (examples.length < 5) examples.push(cleanLine(r).trim().slice(0, 200));
+      }
     }
     if (opts.onProgress && (i + 1) % chunk === 0) opts.onProgress(i + 1, rows.length);
   }
   opts.onProgress?.(rows.length, rows.length);
-  return { lines, stats: { total, parsed: lines.length, skipped } };
+  return { lines, stats: { total, parsed: lines.length, skipped, examples } };
 }
 
 /** Строит функцию «строка лога → id фракции» по алиасам. */

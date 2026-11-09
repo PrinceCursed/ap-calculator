@@ -48,6 +48,8 @@ export interface Tier {
 /** Каждая подходящая строка — одно событие. С tiers — баллы по числу {n}, берётся высший тир. */
 export interface PerLineRule extends BaseRule, PhraseMatcher {
   type: 'perLine';
+  /** Подпись единиц в прогрессе: «0 из 1 побед». По умолчанию «строк». */
+  unitLabel?: string;
   tiers?: Tier[];
 }
 

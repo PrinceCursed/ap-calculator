@@ -114,6 +114,7 @@ export const crime: FactionGroup = {
       points: 0,
       phrases: ['разгружает {n} материалов из оружейного магазина'],
       excludePhrases: ['спас украденную машину'],
+      unitLabel: 'выгрузок',
       tiers: [
         { id: 'gunshop_success', title: 'Ганшоп успешный', min: 4000, points: 3 },
         { id: 'gunshop_attack', title: 'Нападение на ганшоп', min: 1000, max: 3999, points: 2 },
@@ -156,6 +157,7 @@ export const crime: FactionGroup = {
       id: 'flag',
       title: 'Флаг / вагонетка',
       points: 2,
+      unitLabel: 'побед',
       phrases: [
         'побеждает в бою против {*} в режиме захват флага',
         'побеждает в бою против {*} в режиме сопровождение',

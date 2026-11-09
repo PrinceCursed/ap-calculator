@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import { decodeBytes } from '../lib/decode';
 import { analyze, GroupDisabledError, loadFiles, type Loaded } from '../lib/pipeline';
 import type { FromWorker, ToWorker } from './protocol';
 
@@ -27,13 +28,16 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       post({ type: 'progress', phase: 'read', done: 0, total: msg.files.length });
       const files: { name: string; text: string }[] = [];
       let bytes = 0;
+      const encodings: string[] = [];
       for (const f of msg.files) {
         if (typeof (f as { text: unknown }).text === 'string') {
           const t = f as { name: string; text: string };
           files.push(t);
           bytes += t.text.length;
         } else {
-          files.push({ name: f.name, text: await (f as File).text() });
+          const dec = decodeBytes(new Uint8Array(await (f as File).arrayBuffer()));
+          files.push({ name: f.name, text: dec.text });
+          if (dec.encoding !== 'utf-8') encodings.push(`${f.name}: ${dec.encoding}`);
           bytes += (f as File).size;
         }
       }
@@ -47,7 +51,16 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       });
       post({
         type: 'loaded',
-        info: { files: files.map((f) => f.name), bytes, total: loaded.total, parsed: loaded.lines.length, skipped: loaded.skipped, duplicates: loaded.duplicates },
+        info: {
+          files: files.map((f) => f.name),
+          bytes,
+          total: loaded.total,
+          parsed: loaded.lines.length,
+          skipped: loaded.skipped,
+          duplicates: loaded.duplicates,
+          unparsedExamples: loaded.unparsedExamples,
+          encodings,
+        },
       });
       if (loaded.lines.length === 0) {
         post({ type: 'error', code: 'not-logs', message: 'Файл не похож на логи' });

@@ -12,6 +12,10 @@ export interface LoadInfo {
   parsed: number;
   skipped: number;
   duplicates: number;
+  /** До 5 примеров неразобранных строк. */
+  unparsedExamples: string[];
+  /** Файлы, декодированные не как UTF-8 («имя: windows-1251»). */
+  encodings: string[];
 }
 
 export type FromWorker =
