@@ -17,6 +17,11 @@
   --dtx: #a7b4b9;
   color-scheme: dark;
 }
+:root {
+  /* Типографика */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
 :root[data-theme='light'] {
   --bg: #f2f5f4;
   --p: #ffffff;
@@ -40,13 +45,13 @@ html, body { margin: 0; }
 body {
   background: var(--bg);
   color: var(--tx);
-  font: 14px/1.5 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 14px/1.5 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 h1 { margin: 0; }
-.mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .small { font-size: 12px; }
 .muted { color: var(--mut); }
 .fade { color: var(--fade); }
@@ -74,8 +79,12 @@ h1 { margin: 0; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
 .brand-mark {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
-  background: var(--acc); color: var(--accTx); font: 600 12px system-ui, sans-serif;
+  background: var(--acc); color: var(--accTx); font: 600 12px var(--font-sans);
 }
+.brand-logo { display: inline-flex; align-items: center; height: 32px; flex: none; }
+.brand-logo img { display: block; height: 32px; width: auto; max-width: 120px; object-fit: contain; }
+.brand-logo.has-underlay { padding: 2px; border-radius: 8px; background: #f0f4f4; box-shadow: 0 0 0 1px var(--bd); }
+.brand-logo.has-underlay img { height: 28px; }
 .side-foot { margin-top: auto; flex-direction: column; gap: 8px; }
 .side-list { display: flex; flex-direction: column; }
 
@@ -104,7 +113,8 @@ h1 { margin: 0; }
 .seg-tabs button { padding: 0 12px; white-space: nowrap; }
 
 /* ── Список фракций ── */
-.flist { display: flex; flex-direction: column; gap: 2px; position: relative; }
+.flist { display: flex; flex-direction: column; gap: 16px; position: relative; }
+.fsection { display: flex; flex-direction: column; gap: 2px; position: relative; }
 .flist-label {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; letter-spacing: 0.12em; color: var(--fade); padding: 0 12px 8px; font-weight: 500;
@@ -124,7 +134,7 @@ h1 { margin: 0; }
 .fitem-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fitem-badge {
   min-width: 28px; height: 24px; padding: 0 8px; border-radius: 6px; background: var(--p2);
-  border: 1px solid var(--bd); color: var(--mut); font: 400 12px/22px 'JetBrains Mono', monospace; text-align: center;
+  border: 1px solid var(--bd); color: var(--mut); font: 400 12px/22px var(--font-mono); text-align: center;
 }
 .tooltip {
   position: absolute; left: 8px; right: 8px; top: calc(100% + 4px); z-index: 5;
@@ -143,11 +153,11 @@ h1 { margin: 0; }
 /* ── Шапка результата ── */
 .head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .head-title { flex: 1; min-width: 175px; }
-.head h1 { font-size: 30px; font-weight: 650; letter-spacing: -0.035em; line-height: 1.2; }
+.head h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.2; }
 .date-pill {
   display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
   border: 1px solid var(--bd); border-radius: 6px; background: var(--p);
-  font: 400 14px 'JetBrains Mono', monospace; color: var(--tx);
+  font: 400 14px var(--font-mono); color: var(--tx);
 }
 .date-pill.is-empty { color: var(--mut); }
 .date-pill select { border: 0; outline: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; padding: 0; }
@@ -205,13 +215,13 @@ h1 { margin: 0; }
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end;
 }
 .summary-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.summary-value { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; line-height: 1; }
+.summary-value { font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; line-height: 1; }
 .summary-raw { font-size: 40px; font-weight: 600; letter-spacing: -0.02em; color: var(--fade); text-decoration: line-through; }
 .summary-arrow { font-size: 24px; color: var(--mut); }
-.summary-shown { font-size: 48px; font-weight: 650; letter-spacing: -0.04em; }
+.summary-shown { font-size: 48px; font-weight: 600; letter-spacing: -0.04em; }
 .summary-cap { font-size: 16px; color: var(--mut); }
 .cap-note { color: var(--amber); font-size: 14px; }
-.summary-parts b { color: var(--tx); font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+.summary-parts b { color: var(--tx); font-weight: 500; font-family: var(--font-mono); }
 .summary-file { display: flex; flex-direction: column; gap: 4px; text-align: right; }
 .summary-fname { color: var(--tx); word-break: break-all; }
 
@@ -242,13 +252,13 @@ h1 { margin: 0; }
 .ev-occ-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
 .ev-occ-no {
   display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 4px;
-  border: 1px solid var(--bd); background: var(--p2); font: 500 11px 'JetBrains Mono', monospace; color: var(--mut);
+  border: 1px solid var(--bd); background: var(--p2); font: 500 11px var(--font-mono); color: var(--mut);
 }
 .ev-group { display: flex; flex-direction: column; gap: 8px; }
 .ev-title { font-size: 12px; color: var(--mut); font-weight: 500; }
 .ev-box {
   background: var(--bg); border: 1px solid var(--bd); border-radius: 6px; padding: 8px 12px;
-  font: 400 12px/20px 'JetBrains Mono', monospace; overflow: auto; max-height: 420px;
+  font: 400 12px/20px var(--font-mono); overflow: auto; max-height: 420px;
 }
 .ev-line { display: flex; gap: 16px; white-space: nowrap; }
 .ev-no { color: var(--fade); width: 48px; text-align: right; flex: none; }
@@ -341,7 +351,7 @@ h1 { margin: 0; }
 .diag-body { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid var(--bd); padding-top: 16px; }
 .diag-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; margin: 0; max-width: 520px; }
 .diag-grid dt { color: var(--mut); }
-.diag-grid dd { margin: 0; text-align: right; font-family: 'JetBrains Mono', monospace; }
+.diag-grid dd { margin: 0; text-align: right; font-family: var(--font-mono); }
 .diag-list ul { margin: 6px 0 0; padding-left: 18px; color: var(--tx); }
 .diag-list ul.mono { font-size: 12px; word-break: break-all; }
 @media (max-width: 700px) {

@@ -1,26 +1,23 @@
 import type { FactionGroup } from './types';
 
 /**
- * Группа «Crime»: фракции и правила достижений.
+ * Раздел «Банды» вкладки Crime: фракции и правила достижений банд.
+ * Мафии — отдельный раздел со своими (пока не добавленными) правилами: src/config/mafia.ts.
  * Все числа (баллы, пороги, окна времени) и фразы можно править здесь — код парсера не трогать.
  */
 export const crime: FactionGroup = {
-  id: 'crime',
-  title: 'Crime',
+  id: 'gangs',
+  title: 'Банды',
+  tab: 'crime',
   enabled: true,
   dailyCap: 30,
-  // id = слаг логотипа public/factions/<id>.webp. Алиасы сравниваются без учёта регистра, «ё» и лишних пробелов.
+  // id = слаг логотипа public/factions/<id>.svg. Алиасы сравниваются без учёта регистра, «ё» и лишних пробелов.
   factions: [
     { id: 'ballas', name: 'The Ballas Gang', aliases: ['East Side Ballas', 'Ballas', 'Ballas Gang', 'Баллас'] },
     { id: 'marabunta', name: 'Marabunta Grande', aliases: ['Marabunta', 'Марабунта'] },
     { id: 'vagos', name: 'Los Santos Vagos', aliases: ['LS Vagos', 'Vagos', 'Вагос'] },
     { id: 'families', name: 'The Families', aliases: ['Families', 'Фемили', 'Фэмилис'] },
     { id: 'bloods', name: 'Bloods', aliases: ['The Bloods', 'Bloods Gang', 'Бладс'] },
-    { id: 'rm', name: 'Русская Мафия', short: 'Русская', aliases: ['Russian Mafia', 'РМ'] },
-    { id: 'lcn', name: 'Итальянская Мафия', short: 'Итальянская', aliases: ['Italian Mafia', 'La Cosa Nostra', 'LCN'] },
-    { id: 'am', name: 'Армянская Мафия', short: 'Армянская', aliases: ['Armenian Mafia'] },
-    { id: 'mm', name: 'Мексиканская Мафия', short: 'Мексиканская', aliases: ['Mexican Mafia'] },
-    { id: 'yak', name: 'Японская Мафия', short: 'Японская', aliases: ['Japanese Mafia', 'Yakuza', 'Якудза'] },
   ],
   rules: [
     // 1–2. ФЗ / NG: группы выгрузок из армейских грузовиков. Тип — по наличию ЭМИ-строки перед группой.

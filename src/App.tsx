@@ -4,6 +4,7 @@ import { findFaction, GROUPS, isFactionSelectable } from './config';
 import type { ManualRule } from './config/types';
 import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
+import { BrandLogo } from './components/BrandLogo';
 import { FactionLogo } from './components/FactionLogo';
 import { FactionPicker } from './components/FactionPicker';
 import { CoverageWarning, DateSummary, Diagnostics, FoundInFile } from './components/Diagnostics';
@@ -55,7 +56,7 @@ function createWorker() {
 export default function App() {
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const [factionId, setFactionId] = useState<string>(initialFaction);
-  const [groupId, setGroupId] = useState(() => findFaction(factionId)!.group.id);
+  const [tabId, setTabId] = useState(() => findFaction(factionId)!.group.tab);
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState({ phase: 'read', done: 0, total: 0 });
@@ -70,6 +71,11 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Если сохранённая фракция стала недоступной (например, мафия) — initialFaction уже выбрал первую банду; запоминаем это.
+  useEffect(() => {
+    writeStore('ap-faction', factionId);
+  }, [factionId]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -118,7 +124,6 @@ export default function App() {
   const chooseFaction = (id: string) => {
     if (!isFactionSelectable(id)) return;
     setFactionId(id);
-    writeStore('ap-faction', id);
     setMenuOpen(false);
     resetManual();
     if (info && status !== 'loading' && error?.code !== 'not-logs') send({ type: 'analyze', factionId: id, date });
@@ -295,7 +300,8 @@ export default function App() {
       <aside className={`side ${menuOpen ? 'menu-open' : ''}`}>
         <div className="brand-row">
           <div className="brand">
-            <span className="brand-mark">AP</span>AP Calculator
+            <BrandLogo theme={theme} />
+            AP Calculator
           </div>
           <button
             className="icon-btn only-mob-flex"
@@ -315,9 +321,9 @@ export default function App() {
         <div className="side-list">
           <FactionPicker
             groups={GROUPS}
-            groupId={groupId}
+            tabId={tabId}
             factionId={factionId}
-            onGroup={setGroupId}
+            onTab={setTabId}
             onFaction={chooseFaction}
             badges={analysis?.badges}
           />

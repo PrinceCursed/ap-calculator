@@ -144,7 +144,10 @@ export interface Faction {
 
 export interface FactionGroup {
   id: string;
+  /** Название раздела («Банды», «Мафии», «Гос. структуры») — мелкий заголовок над списком фракций. */
   title: string;
+  /** Вкладка сайдбара, в которой показывается раздел: 'crime' или 'gov' (см. TABS в config/index.ts). */
+  tab: string;
   /** false — вкладка и фракции видны, но недоступны (замок, «Скоро»). */
   enabled: boolean;
   /** Подсказка для заблокированной группы. */

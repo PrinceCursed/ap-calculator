@@ -7,7 +7,8 @@ import type { FactionGroup } from './types';
  */
 export const gov: FactionGroup = {
   id: 'gov',
-  title: 'Гос',
+  title: 'Гос. структуры',
+  tab: 'gov',
   enabled: false,
   disabledHint: 'Правила для гос. структур ещё не добавлены',
   dailyCap: 30,

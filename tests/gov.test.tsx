@@ -22,7 +22,7 @@ describe('Группа «Гос» заблокирована (enabled: false)', 
 
   it('в интерфейсе фракции Гос видны, но disabled, клик не выбирает', () => {
     const onFaction = vi.fn();
-    render(<FactionPicker groups={GROUPS} groupId="gov" factionId={null} onGroup={() => {}} onFaction={onFaction} />);
+    render(<FactionPicker groups={GROUPS} tabId="gov" factionId={null} onTab={() => {}} onFaction={onFaction} />);
     expect(screen.getByText('Скоро')).toBeTruthy();
     for (const f of gov.factions) {
       const btn = screen.getByTestId(`faction-${f.id}`) as HTMLButtonElement;
@@ -44,7 +44,7 @@ describe('Группа «Гос» заблокирована (enabled: false)', 
     const groups: FactionGroup[] = GROUPS.map((g) => (g.id === 'gov' ? { ...g, enabled: true } : g));
     expect(isFactionSelectable('lspd', groups)).toBe(true);
     const onFaction = vi.fn();
-    render(<FactionPicker groups={groups} groupId="gov" factionId={null} onGroup={() => {}} onFaction={onFaction} />);
+    render(<FactionPicker groups={groups} tabId="gov" factionId={null} onTab={() => {}} onFaction={onFaction} />);
     fireEvent.click(screen.getByTestId('faction-lspd'));
     expect(onFaction).toHaveBeenCalledWith('lspd');
   });

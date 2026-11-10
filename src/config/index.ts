@@ -1,8 +1,16 @@
 import { crime } from './crime';
 import { gov } from './gov';
+import { mafia } from './mafia';
 import type { Faction, FactionGroup } from './types';
 
-export const GROUPS: FactionGroup[] = [crime, gov];
+/** Разделы фракций. Порядок = порядок в сайдбаре. У каждого свой флаг enabled и свои правила. */
+export const GROUPS: FactionGroup[] = [crime, mafia, gov];
+
+/** Вкладки сайдбара («Crime | Гос»). Разделы попадают во вкладку по полю tab. */
+export const TABS: { id: string; title: string }[] = [
+  { id: 'crime', title: 'Crime' },
+  { id: 'gov', title: 'Гос' },
+];
 
 export function findGroup(groupId: string, groups: FactionGroup[] = GROUPS): FactionGroup | undefined {
   return groups.find((g) => g.id === groupId);
