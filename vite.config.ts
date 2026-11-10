@@ -12,8 +12,16 @@ function logoFavicon(): Plugin {
   const found = ['logo.svg', 'logo.png'].find((f) => existsSync(new URL(`./public/${f}`, import.meta.url)));
   return {
     name: 'logo-favicon',
-    transformIndexHtml: (html) =>
-      found ? html.replace('href="./favicon.svg"', `href="./${found}"`).replace('type="image/svg+xml"', found.endsWith('.png') ? 'type="image/png"' : 'type="image/svg+xml"') : html,
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) =>
+        found
+          ? html.replace(
+              /<link rel="icon"[^>]*>/,
+              `<link rel="icon" type="${found.endsWith('.png') ? 'image/png' : 'image/svg+xml'}" href="./${found}" />`,
+            )
+          : html,
+    },
   };
 }
 
