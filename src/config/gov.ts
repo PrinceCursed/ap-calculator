@@ -2,7 +2,7 @@ import type { FactionGroup } from './types';
 
 /**
  * Группа «Гос». Сейчас ЗАБЛОКИРОВАНА (enabled: false): вкладка и фракции видны, но выбрать их нельзя.
- * Чтобы включить: заполнить rules (формат — как в src/config/crime.ts) и поставить enabled: true.
+ * Чтобы включить: заполнить rules (формат — как в src/config/gangs.ts) и поставить enabled: true.
  * Остальной код править не нужно.
  */
 export const gov: FactionGroup = {

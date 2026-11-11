@@ -1,4 +1,4 @@
-import { crime } from '../src/config/crime';
+import { gangs as crime } from '../src/config/gangs';
 import { runRules } from '../src/lib/engine';
 import { parseLog } from '../src/lib/parser';
 import { analyze, loadFiles } from '../src/lib/pipeline';

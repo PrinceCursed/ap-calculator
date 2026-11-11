@@ -1,10 +1,10 @@
-import { crime } from './crime';
+import { gangs } from './gangs';
 import { gov } from './gov';
 import { mafia } from './mafia';
 import type { Faction, FactionGroup } from './types';
 
 /** Разделы фракций. Порядок = порядок в сайдбаре. У каждого свой флаг enabled и свои правила. */
-export const GROUPS: FactionGroup[] = [crime, mafia, gov];
+export const GROUPS: FactionGroup[] = [gangs, mafia, gov];
 
 /** Вкладки сайдбара («Crime | Гос»). Разделы попадают во вкладку по полю tab. */
 export const TABS: { id: string; title: string }[] = [

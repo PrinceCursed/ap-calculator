@@ -1,10 +1,14 @@
 import { Calendar, ChevronDown, FileText, FileX, Moon, Sun, Upload } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { findFaction, GROUPS, isFactionSelectable } from './config';
 import type { ManualRule } from './config/types';
 import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
+import { buildReport } from './lib/report';
+import { EMPTY_SPENDS, spendList, spentTotal, type SpendState } from './lib/spend';
 import { BrandLogo } from './components/BrandLogo';
+import { ReportModal } from './components/Report';
+import { SpendsTab } from './components/Spends';
 import { FactionLogo } from './components/FactionLogo';
 import { FactionPicker } from './components/FactionPicker';
 import { CoverageWarning, DateSummary, Diagnostics, FoundInFile } from './components/Diagnostics';
@@ -67,6 +71,9 @@ export default function App() {
   const [tab, setTab] = useState<ResultTab>('ach');
   const [manual, setManual] = useState<Record<string, number>>({});
   const [adjust, setAdjust] = useState(0);
+  // Траты живут только в памяти сеанса: сбрасываются при смене фракции или даты, но не при загрузке логов.
+  const [spends, setSpends] = useState<SpendState>(EMPTY_SPENDS);
+  const [reportOpen, setReportOpen] = useState(false);
   const [drag, setDrag] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const workerRef = useRef<Worker | null>(null);
@@ -123,6 +130,7 @@ export default function App() {
 
   const chooseFaction = (id: string) => {
     if (!isFactionSelectable(id)) return;
+    if (id !== factionId) setSpends(EMPTY_SPENDS);
     setFactionId(id);
     setMenuOpen(false);
     resetManual();
@@ -130,6 +138,7 @@ export default function App() {
   };
 
   const chooseDate = (d: string) => {
+    if (d !== date) setSpends(EMPTY_SPENDS);
     setDate(d);
     resetManual();
     if (info) send({ type: 'analyze', factionId, date: d });
@@ -159,8 +168,11 @@ export default function App() {
   };
 
   const pick = () => inputRef.current?.click();
+  const closeReport = useCallback(() => setReportOpen(false), []);
   const manualSum = manualRules.reduce((s, r) => s + (manual[r.id] ?? 0) * r.points, 0);
   const result = analysis?.result;
+  const spendItems = spendList(spends, activeGroup.shop);
+  const spent = spentTotal(spendItems);
   const fileLabel = (info?.files ?? pending?.names ?? []).join(', ');
   const fileBytes = info?.bytes ?? pending?.bytes ?? 0;
   const pct = progress.phase === 'compute' ? 100 : progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -257,6 +269,8 @@ export default function App() {
           fileName={fileLabel}
           fileSize={info.bytes}
           lines={info.total}
+          spent={spent}
+          onReport={() => setReportOpen(true)}
         />
         <div className="result-tabs">
           <ResultTabs tab={tab} onTab={setTab} disputed={result.disputed.length} />
@@ -271,6 +285,7 @@ export default function App() {
               onAdjust={setAdjust}
             />
           )}
+          {tab === 'spend' && <SpendsTab shop={activeGroup.shop} state={spends} onChange={setSpends} />}
           <div className="small fade footnote">
             Проигнорировано строк других фракций и дат: {fmt(analysis.ignoredOtherFaction + analysis.ignoredOtherDate)}
             {' · '}других фракций {fmt(analysis.ignoredOtherFaction)}, других дат {fmt(analysis.ignoredOtherDate)}
@@ -396,6 +411,21 @@ export default function App() {
         </header>
         {body}
       </main>
+      {reportOpen && analysis?.date && result && (
+        <ReportModal
+          faction={faction}
+          onClose={closeReport}
+          model={buildReport({
+            group: activeGroup,
+            factionName: faction.name,
+            date: analysis.date,
+            achievements: result.achievements,
+            manualCounts: manual,
+            adjust,
+            spends: spendItems,
+          })}
+        />
+      )}
     </div>
   );
 }

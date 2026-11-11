@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { FactionPicker } from '../src/components/FactionPicker';
 import { GROUPS, isFactionSelectable } from '../src/config';
-import { crime } from '../src/config/crime';
+import { gangs as crime } from '../src/config/gangs';
 import { mafia } from '../src/config/mafia';
 import { analyze, GroupDisabledError, loadFiles } from '../src/lib/pipeline';
 

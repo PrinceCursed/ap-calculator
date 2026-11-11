@@ -3,7 +3,7 @@ import type { FactionGroup } from './types';
 /**
  * Раздел «Мафии» вкладки Crime. Сейчас ЗАКРЫТ (enabled: false): правила банд к мафиям не относятся,
  * у мафий свои достижения. Фракции видны, но выбрать их и загрузить логи нельзя.
- * Чтобы открыть: заполнить rules (формат — как в src/config/crime.ts) и поставить enabled: true.
+ * Чтобы открыть: заполнить rules (формат — как в src/config/gangs.ts) и поставить enabled: true.
  */
 export const mafia: FactionGroup = {
   id: 'mafia',

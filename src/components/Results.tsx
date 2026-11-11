@@ -3,6 +3,7 @@ import {
   Car,
   ChevronDown,
   Handshake,
+  Image as ImageIcon,
   Landmark,
   Minus,
   Newspaper,
@@ -39,8 +40,14 @@ export function Summary(props: {
   lines: number;
   /** Лог покрывает сутки не полностью. */
   partial?: boolean;
+  /** Потрачено AP за день (вкладка «Траты»). */
+  spent?: number;
+  /** Открыть окно картинки-отчёта. */
+  onReport?: () => void;
 }) {
   const c = applyCap(props.auto + props.manual + props.adjust, props.cap);
+  const spent = props.spent ?? 0;
+  const net = c.total - spent;
   return (
     <section className="summary">
       <div className="summary-main">
@@ -65,8 +72,31 @@ export function Summary(props: {
             Лимит: засчитано {c.total}, набрано {c.sum}, урезано {c.cut}
           </div>
         )}
+        <div className="summary-parts" data-testid="day-parts">
+          <span>
+            Начислено <b data-testid="earned">{c.total}</b>
+          </span>
+          <span className="sep">·</span>
+          <span>
+            Потрачено <b data-testid="spent">{spent}</b>
+          </span>
+          <span className="sep">·</span>
+          <span>
+            Итог дня{' '}
+            <b className={net < 0 ? 'neg-tx' : ''} data-testid="net">
+              {net < 0 ? `−${-net}` : net}
+            </b>{' '}
+            AP
+          </span>
+        </div>
       </div>
       <div className="summary-file small muted">
+        {props.onReport && (
+          <button className="btn btn-outline btn-sm summary-report" onClick={props.onReport} data-testid="report-btn">
+            <ImageIcon size={16} strokeWidth={1.5} aria-hidden />
+            Отчёт
+          </button>
+        )}
         <span className="mono summary-fname">{props.fileName}</span>
         <span>
           {formatBytes(props.fileSize)} · {fmt(props.lines)} строк
@@ -76,13 +106,14 @@ export function Summary(props: {
   );
 }
 
-export type ResultTab = 'ach' | 'disp' | 'man';
+export type ResultTab = 'ach' | 'disp' | 'man' | 'spend';
 
 export function ResultTabs({ tab, onTab, disputed }: { tab: ResultTab; onTab: (t: ResultTab) => void; disputed: number }) {
   const tabs: [ResultTab, string, string][] = [
     ['ach', 'Достижения', 'Достижения'],
     ['disp', `Спорные случаи (${disputed})`, `Спорные (${disputed})`],
     ['man', 'Ручные', 'Ручные'],
+    ['spend', 'Траты', 'Траты'],
   ];
   return (
     <div className="seg seg-tabs" role="tablist" aria-label="Результат">

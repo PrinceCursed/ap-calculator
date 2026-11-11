@@ -25,6 +25,8 @@ export interface BaseRule {
   oncePerDay?: boolean;
   /** Краткое пояснение условия (показывается подсказкой). */
   hint?: string;
+  /** Название строки в картинке-отчёте («Ограбление 30 домов»). По умолчанию title. */
+  reportTitle?: string;
 }
 
 export interface PhraseMatcher {
@@ -43,6 +45,8 @@ export interface Tier {
   /** Отдельная строка в таблице для этого тира (например «Ганшоп успешный»). */
   id: string;
   title: string;
+  /** Название в картинке-отчёте. По умолчанию title. */
+  reportTitle?: string;
 }
 
 /** Каждая подходящая строка — одно событие. С tiers — баллы по числу {n}, берётся высший тир. */
@@ -98,6 +102,8 @@ export interface Variant {
   id: string;
   title: string;
   points: number;
+  /** Название в картинке-отчёте. По умолчанию title. */
+  reportTitle?: string;
   /** Вариант выбирается, если не позже lookbackMinutes до первой строки группы есть такая строка. */
   requiresPreceding?: PhraseMatcher & { lookbackMinutes: number; label: string };
 }
@@ -156,4 +162,27 @@ export interface FactionGroup {
   dailyCap: number;
   factions: Faction[];
   rules: Rule[];
+  /** Магазин AP группы (вкладка «Траты»). Нет поля — «Магазин для этой группы ещё не добавлен». */
+  shop?: ShopItem[];
+}
+
+/**
+ * Товар магазина: покупается пакетами, итог = пакеты × cost.
+ * Название строки трат строится по шаблону label:
+ *   {qty}   — количество в штуках (пакеты × pack): «3000»
+ *   {word}  — слово из forms, согласованное с {qty}: «матов»
+ * Если в label нет {qty} (единичный товар) и пакетов больше одного, добавляется « ×N».
+ */
+export interface ShopItem {
+  id: string;
+  /** Название на плитке. */
+  title: string;
+  /** Размер пакета в штуках. */
+  pack: number;
+  /** Стоимость одного пакета в AP. */
+  cost: number;
+  /** Шаблон названия строки трат. По умолчанию '{qty} {word}' (или title, если forms нет). */
+  label?: string;
+  /** Формы слова для {word}: [1, 2–4, 5+] — ['мат', 'мата', 'матов']. */
+  forms?: [string, string, string];
 }

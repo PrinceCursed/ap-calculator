@@ -5,7 +5,7 @@ import type { FactionGroup } from './types';
  * Мафии — отдельный раздел со своими (пока не добавленными) правилами: src/config/mafia.ts.
  * Все числа (баллы, пороги, окна времени) и фразы можно править здесь — код парсера не трогать.
  */
-export const crime: FactionGroup = {
+export const gangs: FactionGroup = {
   id: 'gangs',
   title: 'Банды',
   tab: 'crime',
@@ -63,6 +63,7 @@ export const crime: FactionGroup = {
       type: 'cluster',
       id: 'ems',
       title: 'EMS (нападение на аптеки)',
+      reportTitle: 'Успешная доставка поставки EMS',
       points: 2,
       phrases: ['разгружает {n} аптек из {key}'],
       gapMinutes: 10,
@@ -97,6 +98,7 @@ export const crime: FactionGroup = {
       type: 'perCount',
       id: 'graffiti',
       title: 'Граффити-вары',
+      reportTitle: 'Граффити-вары: 3 победы',
       points: 2,
       per: 3,
       unitLabel: 'побед',
@@ -123,6 +125,7 @@ export const crime: FactionGroup = {
       type: 'perCount',
       id: 'racket',
       title: 'Рэкет',
+      reportTitle: 'Рэкет: 10 нападений',
       points: 2,
       per: 10,
       unitLabel: 'нападений',
@@ -186,6 +189,7 @@ export const crime: FactionGroup = {
       type: 'perCount',
       id: 'houses',
       title: 'Ограбление домов',
+      reportTitle: 'Ограбление 30 домов',
       points: 2,
       per: 30,
       unitLabel: 'домов',
@@ -197,6 +201,7 @@ export const crime: FactionGroup = {
       type: 'perCount',
       id: 'cars',
       title: 'Угонки',
+      reportTitle: 'Угон 30 машин',
       points: 2,
       per: 30,
       unitLabel: 'машин',
@@ -208,6 +213,7 @@ export const crime: FactionGroup = {
       type: 'perCount',
       id: 'robbery',
       title: 'Ограбление игроков',
+      reportTitle: 'Ограбление 20 игроков',
       points: 3,
       per: 20,
       unitLabel: 'ограблений',
@@ -238,5 +244,18 @@ export const crime: FactionGroup = {
     { type: 'manual', id: 'm_driveby', title: 'Проведение 1 проезда мимо', points: 2 },
     { type: 'manual', id: 'm_gov_help', title: 'Помощь в захвате гос. структуры', points: 5 },
     { type: 'manual', id: 'm_wn', title: 'Осветить РП деятельность через WN', points: 5 },
+  ],
+  // Магазин AP банд (вкладка «Траты»): cost — AP за ОДИН пакет размером pack.
+  // label: {qty} = пакеты × pack, {word} — форма слова из forms. Без {qty} — единичный товар.
+  shop: [
+    { id: 'leader', title: 'Баллы лидерского срока', pack: 1, cost: 2, label: '{qty} {word} лидерского срока', forms: ['балл', 'балла', 'баллов'] },
+    { id: 'mats', title: 'Маты', pack: 1000, cost: 10, forms: ['мат', 'мата', 'матов'] },
+    { id: 'medkits', title: 'Аптечки', pack: 175, cost: 10, forms: ['аптечка', 'аптечки', 'аптечек'] },
+    { id: 'analgesic', title: 'Анальгетик', pack: 100, cost: 10, forms: ['анальгетика', 'анальгетика', 'анальгетика'] },
+    { id: 'spank', title: 'Спанк', pack: 100, cost: 10, forms: ['спанка', 'спанка', 'спанка'] },
+    { id: 'joints', title: 'Косяки', pack: 5000, cost: 10, forms: ['косяк', 'косяка', 'косяков'] },
+    { id: 'seeds', title: 'Семечки', pack: 7500, cost: 10, forms: ['семечка', 'семечки', 'семечек'] },
+    { id: 'x2mats', title: 'x2 маты со следующего ганшопа', pack: 1, cost: 25, label: 'x2 маты со следующего ганшопа' },
+    { id: 'car', title: 'Замена 1 авто', pack: 1, cost: 50, label: 'Замена 1 авто ({qty} {word})', forms: ['неделя', 'недели', 'недель'] },
   ],
 };
