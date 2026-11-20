@@ -254,7 +254,7 @@ export const gangs: FactionGroup = {
     { id: 'analgesic', title: 'Анальгетик', pack: 100, cost: 10, forms: ['анальгетика', 'анальгетика', 'анальгетика'] },
     { id: 'spank', title: 'Спанк', pack: 100, cost: 10, forms: ['спанка', 'спанка', 'спанка'] },
     { id: 'joints', title: 'Косяки', pack: 5000, cost: 10, forms: ['косяк', 'косяка', 'косяков'] },
-    { id: 'seeds', title: 'Семечки', pack: 7500, cost: 10, forms: ['семечка', 'семечки', 'семечек'] },
+    { id: 'seeds', title: 'Семерки', pack: 7500, cost: 10, forms: ['семерка', 'семерки', 'семерок'] },
     { id: 'x2mats', title: 'x2 маты со следующего ганшопа', pack: 1, cost: 25, label: 'x2 маты со следующего ганшопа' },
     { id: 'car', title: 'Замена 1 авто', pack: 1, cost: 50, label: 'Замена 1 авто ({qty} {word})', forms: ['неделя', 'недели', 'недель'] },
   ],
