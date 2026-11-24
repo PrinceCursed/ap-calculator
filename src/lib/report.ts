@@ -1,5 +1,5 @@
-import type { FactionGroup, ManualRule } from '../config/types';
-import type { AchievementResult } from './engine';
+import type { FactionGroup, Rule } from '../config/types';
+import { manualCount, type AchievementResult } from './engine';
 import type { Spend } from './spend';
 import { dayTotal, spentTotal } from './spend';
 
@@ -28,9 +28,9 @@ export interface ReportModel {
 }
 
 /** id строки таблицы (правило / тир / вариант) → название для отчёта. */
-export function reportTitles(group: FactionGroup): Map<string, string> {
+export function reportTitles(group: FactionGroup, rules = group.rules): Map<string, string> {
   const m = new Map<string, string>();
-  for (const r of group.rules) {
+  for (const r of rules) {
     if ('title' in r && r.reportTitle) m.set(r.id, r.reportTitle);
     if (r.type === 'perLine') for (const t of r.tiers ?? []) if (t.reportTitle) m.set(t.id, t.reportTitle);
     if (r.type === 'variantCluster') for (const v of r.variants) if (v.reportTitle) m.set(v.id, v.reportTitle);
@@ -44,6 +44,7 @@ export function reportTitles(group: FactionGroup): Map<string, string> {
  */
 export function buildReport(input: {
   group: FactionGroup;
+  rules?: Rule[];
   factionName: string;
   date: string;
   achievements: AchievementResult[];
@@ -51,8 +52,8 @@ export function buildReport(input: {
   adjust: number;
   spends: Spend[];
 }): ReportModel {
-  const { group } = input;
-  const titles = reportTitles(group);
+  const { group, rules = group.rules } = input;
+  const titles = reportTitles(group, rules);
   const rows: ReportRow[] = [];
   for (const s of input.spends) rows.push({ kind: 'spend', title: s.title, ap: s.ap });
 
@@ -63,9 +64,9 @@ export function buildReport(input: {
     for (let i = 0; i < a.count; i++) rows.push({ kind: 'earn', title, ap: a.unitPoints });
     earnedRaw += a.total;
   }
-  const manual = group.rules.filter((r): r is ManualRule => r.type === 'manual');
-  for (const r of manual) {
-    const n = input.manualCounts[r.id] ?? 0;
+  for (const r of rules) {
+    if (r.type !== 'manual') continue;
+    const n = manualCount(r, input.manualCounts[r.id]);
     for (let i = 0; i < n; i++) rows.push({ kind: 'earn', title: r.reportTitle ?? r.title, ap: r.points });
     earnedRaw += n * r.points;
   }

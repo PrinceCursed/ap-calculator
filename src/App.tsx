@@ -1,7 +1,8 @@
 import { Calendar, ChevronDown, FileText, FileX, Moon, Sun, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { findFaction, GROUPS, isFactionSelectable } from './config';
+import { findFaction, GROUPS, isFactionEnabled, isFactionSelectable } from './config';
 import type { ManualRule } from './config/types';
+import { manualCount } from './lib/engine';
 import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
 import { buildReport } from './lib/report';
@@ -50,7 +51,7 @@ function initialTheme(): Theme {
 function initialFaction(): string {
   const f = readStore('ap-faction');
   if (f && isFactionSelectable(f)) return f;
-  return GROUPS.find((g) => g.enabled)!.factions[0].id;
+  return GROUPS.flatMap((group) => group.factions.filter((faction) => isFactionEnabled(group, faction)))[0].id;
 }
 
 function createWorker() {
@@ -77,6 +78,7 @@ export default function App() {
   const [drag, setDrag] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const workerRef = useRef<Worker | null>(null);
+  const selectedFaction = useRef(factionId);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Если сохранённая фракция стала недоступной (например, мафия) — initialFaction уже выбрал первую банду; запоминаем это.
@@ -98,6 +100,10 @@ export default function App() {
       } else if (m.type === 'loaded') {
         setInfo(m.info);
       } else if (m.type === 'result') {
+        if (m.analysis.factionId !== selectedFaction.current) {
+          w.postMessage({ type: 'analyze', factionId: selectedFaction.current, date: m.analysis.date });
+          return;
+        }
         setAnalysis(m.analysis);
         setDate(m.analysis.date);
         setError(null);
@@ -121,7 +127,8 @@ export default function App() {
   const found = findFaction(factionId)!;
   const faction = found.faction;
   const activeGroup = found.group;
-  const manualRules = useMemo(() => activeGroup.rules.filter((r): r is ManualRule => r.type === 'manual'), [activeGroup]);
+  const activeRules = found.rules;
+  const manualRules = useMemo(() => activeRules.filter((r): r is ManualRule => r.type === 'manual'), [activeRules]);
 
   const resetManual = () => {
     setManual({});
@@ -130,8 +137,14 @@ export default function App() {
 
   const chooseFaction = (id: string) => {
     if (!isFactionSelectable(id)) return;
-    if (id !== factionId) setSpends(EMPTY_SPENDS);
+    if (id !== factionId) {
+      setSpends(EMPTY_SPENDS);
+      setAnalysis(null);
+      setReportOpen(false);
+    }
+    selectedFaction.current = id;
     setFactionId(id);
+    setTabId(findFaction(id)!.group.tab);
     setMenuOpen(false);
     resetManual();
     if (info && status !== 'loading' && error?.code !== 'not-logs') send({ type: 'analyze', factionId: id, date });
@@ -169,7 +182,7 @@ export default function App() {
 
   const pick = () => inputRef.current?.click();
   const closeReport = useCallback(() => setReportOpen(false), []);
-  const manualSum = manualRules.reduce((s, r) => s + (manual[r.id] ?? 0) * r.points, 0);
+  const manualSum = manualRules.reduce((s, r) => s + manualCount(r, manual[r.id]) * r.points, 0);
   const result = analysis?.result;
   const spendItems = spendList(spends, activeGroup.shop);
   const spent = spentTotal(spendItems);
@@ -417,6 +430,7 @@ export default function App() {
           onClose={closeReport}
           model={buildReport({
             group: activeGroup,
+            rules: activeRules,
             factionName: faction.name,
             date: analysis.date,
             achievements: result.achievements,

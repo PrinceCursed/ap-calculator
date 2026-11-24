@@ -1,5 +1,6 @@
 import type {
   ClusterRule,
+  ManualRule,
   PerCountRule,
   PerLineRule,
   Rule,
@@ -331,32 +332,46 @@ function runVariantCluster(rule: VariantClusterRule, lines: LogLine[], day: DayR
 function runSequence(rule: SequenceRule, lines: LogLine[], day: DayRange, out: EngineResult) {
   const s1 = hits(lines, compileMatcher(rule.step1));
   const finals = hits(lines.filter((l) => inDay(day, l)), compileMatcher(rule.final));
+  const distinctGroup = rule.final.distinctGroup;
+  const deliveries = distinctGroup ? groupByGap(finals, distinctGroup.gapMinutes) : finals.map((hit) => [hit]);
   const used = new Set<LogLine>();
   const seen = new Set<LogLine>();
   const occ: Occurrence[] = [];
   const { minDistinct, windowMinutes, label } = rule.step1;
   let best = 0;
+  let previousDelivery: LogLine | undefined;
 
-  for (const f of finals) {
+  for (const delivery of deliveries) {
+    const first = delivery[0].line;
+    const final = delivery[delivery.length - 1];
     const cand = s1.filter(
-      (h) => !used.has(h.line) && compareLines(h.line, f.line) < 0 && h.line.ts >= f.line.ts - windowMinutes * MIN,
+      (h) => !used.has(h.line) &&
+        compareLines(h.line, first) < 0 &&
+        h.line.ts >= first.ts - windowMinutes * MIN &&
+        (!previousDelivery || compareLines(h.line, previousDelivery) > 0),
     );
+    if (distinctGroup) previousDelivery = final.line;
     const d = distinctValues(cand, 'static').size;
     best = Math.max(best, d);
-    const n = f.m.n;
+    const n = final.m.n;
     const numOk = rule.final.minNumber === undefined || (n !== undefined && n >= rule.final.minNumber);
-    const numText = n !== undefined ? `, ${n} ${rule.final.numberUnit ?? ''}`.trimEnd() : '';
+    const distinct = distinctGroup ? distinctValues(delivery, 'key').size : 0;
+    const groupOk = !distinctGroup || distinct >= distinctGroup.minDistinct;
+    const finalDetail = distinctGroup
+      ? `, ${shortOf(distinct, distinctGroup.minDistinct, distinctGroup.label)}`
+      : n !== undefined ? `, ${n} ${rule.final.numberUnit ?? ''}`.trimEnd() : '';
     const steps: EvStep[] = [
       { label: `Шаг 1: ${d} ${label}`, lines: cand.map(ev) },
-      { label: `Шаг 2: ${rule.final.label}${numText}`, lines: [ev(f)] },
+      { label: `Шаг 2: ${rule.final.label}${finalDetail}`, lines: delivery.map(ev) },
     ];
-    if (d >= minDistinct && numOk) {
+    if (d >= minDistinct && groupOk && numOk) {
       cand.forEach((h) => used.add(h.line));
-      occ.push({ label: `${f.line.time} — ${d} ${label}${numText}`, steps });
+      occ.push({ label: `${span(delivery)} — ${d} ${label}${finalDetail}`, steps });
     } else {
       cand.forEach((h) => seen.add(h.line));
       const reasons: string[] = [];
-      if (d < minDistinct) reasons.push(`${d} из ${minDistinct} ${label}`);
+      if (d < minDistinct) reasons.push(shortOf(d, minDistinct, label));
+      if (distinctGroup && !groupOk) reasons.push(shortOf(distinct, distinctGroup.minDistinct, distinctGroup.label));
       if (!numOk)
         reasons.push(
           n === undefined
@@ -412,13 +427,26 @@ export function runRules(rules: Rule[], lines: LogLine[], day: DayRange): Engine
       case 'sequence':
         runSequence(rule, sorted, day, out);
         break;
-      case 'manual':
+      case 'manual': {
+        if (!rule.evidence) break;
+        const matching = hits(sorted.filter((line) => inDay(day, line)), compileMatcher(rule.evidence));
+        if (matching.length) {
+          out.disputed.push(dispute(rule.id, rule.title, rule.hint ?? 'Требуется ручная проверка', [
+            { label: 'Строки для проверки', lines: matching.map(ev) },
+          ]));
+        }
         break;
+      }
     }
   }
   out.autoSum = out.achievements.reduce((s, a) => s + a.total, 0);
   out.unmatched = unmatchedLines(rules, sorted, day);
   return out;
+}
+
+/** Количество ручных выполнений, допустимое за выбранный день. */
+export function manualCount(rule: ManualRule, count = 0): number {
+  return rule.oncePerDay ? Math.min(count, 1) : count;
 }
 
 /** Итог с дневным лимитом. */
@@ -439,6 +467,7 @@ function allMatchers(rules: Rule[]) {
       ms.push(r);
       for (const v of r.variants) if (v.requiresPreceding) ms.push(v.requiresPreceding);
     } else if (r.type === 'sequence') ms.push(r.step1, r.final);
+    else if (r.type === 'manual' && r.evidence) ms.push(r.evidence);
   }
   // для диагностики игнорируем actor/exclude: важно, «похожа» ли строка на достижение
   return ms.map((m) => compileMatcher({ phrases: m.phrases }));

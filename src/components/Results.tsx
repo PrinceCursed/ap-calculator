@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ManualRule } from '../config/types';
-import { applyCap, type AchievementResult, type DisputedCase } from '../lib/engine';
+import { applyCap, manualCount, type AchievementResult, type DisputedCase } from '../lib/engine';
 import { Evidence } from './Evidence';
 
 const ICON = { size: 16, strokeWidth: 1.5 } as const;
@@ -255,7 +255,7 @@ export function ManualGrid({
     <div className="manual">
       <div className="manual-grid">
         {rules.map((r) => {
-          const n = counts[r.id] ?? 0;
+          const n = manualCount(r, counts[r.id]);
           const Icon = MANUAL_ICONS[r.id] ?? Star;
           return (
             <div key={r.id} className={`mcard ${n > 0 ? 'is-on' : ''}`}>
@@ -265,13 +265,14 @@ export function ManualGrid({
               <span className="mcard-text">
                 <span className="mcard-name">{r.title}</span>
                 <span className="mono small muted">+{r.points} AP</span>
+                {r.hint && <span className="small muted">{r.hint}</span>}
               </span>
               <span className="stepper">
                 <button className="sq" onClick={() => onCount(r.id, Math.max(0, n - 1))} aria-label={`Уменьшить · ${r.title}`}>
                   <Minus size={14} strokeWidth={1.5} />
                 </button>
                 <span className="mono stepper-val">{n}</span>
-                <button className="sq" onClick={() => onCount(r.id, n + 1)} aria-label={`Увеличить · ${r.title}`}>
+                <button className="sq" disabled={r.oncePerDay && n >= 1} onClick={() => onCount(r.id, n + 1)} aria-label={`Увеличить · ${r.title}`}>
                   <Plus size={14} strokeWidth={1.5} />
                 </button>
               </span>

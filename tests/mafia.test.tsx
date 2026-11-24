@@ -58,11 +58,11 @@ describe('Crime: «Банды» открыты, «Мафии» закрыты', 
     expect(screen.getByTestId('faction-vagos').querySelector('.fitem-badge')!.textContent).toBe('7');
   });
 
-  it('вкладка Crime без замка (банды открыты), вкладка Гос — с замком', () => {
+  it('вкладки Crime и Гос без замка, пока в каждой доступна хотя бы одна фракция', () => {
     render(<FactionPicker groups={GROUPS} tabId="crime" factionId={null} onTab={() => {}} onFaction={() => {}} />);
     const [crimeTab, govTab] = screen.getAllByRole('tab');
     expect(crimeTab.querySelector('svg')).toBeNull();
-    expect(govTab.querySelector('svg')).not.toBeNull();
+    expect(govTab.querySelector('svg')).toBeNull();
   });
 });
 

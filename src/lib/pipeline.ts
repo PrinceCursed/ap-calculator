@@ -1,5 +1,5 @@
 import type { FactionGroup } from '../config/types';
-import { findFaction, GROUPS } from '../config';
+import { findFaction, GROUPS, isFactionEnabled } from '../config';
 import { runRules, type EngineResult } from './engine';
 import { buildFactionResolver, parseLog, type LogLine } from './parser';
 
@@ -180,7 +180,7 @@ export function analyze(
 ): Analysis {
   const found = findFaction(factionId, groups);
   if (!found) throw new Error(`Неизвестная фракция: ${factionId}`);
-  if (!found.group.enabled) throw new GroupDisabledError(found.group.id);
+  if (!isFactionEnabled(found.group, found.faction)) throw new GroupDisabledError(found.group.id);
   const group = found.group;
   const resolve = buildFactionResolver(group.factions);
 
@@ -216,9 +216,11 @@ export function analyze(
   const badges: Record<string, number> = {};
   if (badgeDate) {
     const day = dayRange(badgeDate);
-    for (const [id, ls] of byFaction) {
+    for (const faction of group.factions) {
+      if (!isFactionEnabled(group, faction)) continue;
+      const ls = byFaction.get(faction.id)!;
       if (!ls.some((l) => l.ts >= day.start && l.ts < day.end)) continue;
-      badges[id] = Math.min(group.dailyCap, runRules(group.rules, ls, day).autoSum);
+      badges[faction.id] = Math.min(group.dailyCap, runRules(faction.rules ?? group.rules, ls, day).autoSum);
     }
   }
 
@@ -236,6 +238,6 @@ export function analyze(
   const day = dayRange(chosen);
   const inDay = mine.filter((l) => l.date === chosen);
   const dayLines = inDay.length;
-  const result = dayLines ? runRules(group.rules, mine, day) : null;
+  const result = dayLines ? runRules(found.rules, mine, day) : null;
   return { ...base, date: chosen, dayLines, ignoredOtherDate: mine.length - dayLines, result, coverage: coverageOf(inDay) };
 }

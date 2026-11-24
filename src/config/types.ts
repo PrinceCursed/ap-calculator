@@ -95,6 +95,8 @@ export interface SequenceRule extends BaseRule {
     minNumber?: number;
     numberUnit?: string; // «ящ.»
     label: string; // «доставка»
+    /** Несколько строк завершения одного события с порогом по разным {key}. */
+    distinctGroup?: { gapMinutes: number; minDistinct: number; label: string };
   };
 }
 
@@ -125,6 +127,8 @@ export interface VariantClusterRule extends PhraseMatcher {
 
 export interface ManualRule extends BaseRule {
   type: 'manual';
+  /** Строки для ручной проверки, которые сами по себе не подтверждают достижение. */
+  evidence?: PhraseMatcher;
 }
 
 export type Rule =
@@ -138,6 +142,10 @@ export type Rule =
 export interface Faction {
   /** Ключ фракции; по умолчанию это и слаг логотипа public/factions/<id>.webp. */
   id: string;
+  /** false — эта фракция закрыта даже в открытом разделе. */
+  enabled?: boolean;
+  /** Собственные правила фракции вместо общих правил раздела. */
+  rules?: Rule[];
   /** Необязательно: другой слаг логотипа. Нет файла — показывается монограмма. */
   logo?: string;
   /** Полное название (заголовок результата). */

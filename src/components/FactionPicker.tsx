@@ -1,6 +1,6 @@
 import { Lock, Search } from 'lucide-react';
 import { useState } from 'react';
-import { TABS } from '../config';
+import { isFactionEnabled, TABS } from '../config';
 import type { FactionGroup } from '../config/types';
 import { FactionLogo } from './FactionLogo';
 
@@ -38,7 +38,7 @@ export function FactionPicker({ groups, tabId, factionId, onTab, onFaction, badg
 
       <div className="seg seg-2" role="tablist" aria-label="Группа фракций">
         {tabs.map((t) => {
-          const locked = groups.filter((g) => g.tab === t.id).every((g) => !g.enabled);
+          const locked = groups.filter((g) => g.tab === t.id).every((g) => g.factions.every((f) => !isFactionEnabled(g, f)));
           return (
             <button key={t.id} role="tab" aria-selected={t.id === tabId} className={t.id === tabId ? 'is-on' : ''} onClick={() => onTab(t.id)}>
               {locked && <Lock size={12} strokeWidth={1.5} aria-hidden />}
@@ -55,14 +55,15 @@ export function FactionPicker({ groups, tabId, factionId, onTab, onFaction, badg
           );
           if (!items.length) return null;
           shown += items.length;
-          const locked = !group.enabled;
+          const sectionLocked = group.factions.every((f) => !isFactionEnabled(group, f));
           return (
             <div className="fsection" key={group.id} data-testid={`section-${group.id}`}>
               <div className="flist-label">
                 <span>{group.title.toUpperCase()}</span>
-                {locked && <span className="soon">Скоро</span>}
+                {sectionLocked && <span className="soon">Скоро</span>}
               </div>
               {items.map((f) => {
+                const locked = !isFactionEnabled(group, f);
                 const selected = factionId === f.id;
                 const badge = badges?.[f.id];
                 return (
