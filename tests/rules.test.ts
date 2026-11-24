@@ -138,9 +138,17 @@ describe('Остальные правила', () => {
     expect(ach(t, 'racket').total).toBe(2);
   });
 
-  it('Дома: 60 = 2 раза по 2 AP', () => {
-    const t = lines(...Array.from({ length: 60 }, (_, i) => L(at('01:00:00', i * 30), P(i % 5), `Взламывает дом #${i}.`)));
-    expect(ach(t, 'houses')).toMatchObject({ count: 2, total: 4 });
+  it.each([
+    { id: 'houses', threshold: 20, unit: 'домов', event: 'Взламывает дом' },
+    { id: 'cars', threshold: 15, unit: 'машин', event: 'Привозит угнанный автомобиль' },
+    { id: 'robbery', threshold: 10, unit: 'ограблений', event: 'Грабит человека' },
+  ])('$id: каждые $threshold дают 2 AP', ({ id, threshold, unit, event }) => {
+    const events = Array.from({ length: threshold * 2 }, (_, i) => L(at('01:00:00', i * 30), P(i % 5), `${event} #${i}.`));
+    const below = lines(...events.slice(0, threshold - 1));
+    expect(ach(below, id)).toMatchObject({ count: 0, total: 0 });
+    expect(disputed(below, id)[0].reason).toBe(`${threshold - 1} из ${threshold} ${unit}`);
+    expect(ach(lines(...events.slice(0, threshold)), id)).toMatchObject({ count: 1, total: 2 });
+    expect(ach(lines(...events), id)).toMatchObject({ count: 2, total: 4 });
   });
 
   it('Аирдроп: 10 участников + SYSTEM-строка → 4 AP; без SYSTEM → спорный', () => {

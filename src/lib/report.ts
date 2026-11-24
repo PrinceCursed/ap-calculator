@@ -40,7 +40,7 @@ export function reportTitles(group: FactionGroup): Map<string, string> {
 
 /**
  * Данные для картинки (без рендера). Сначала траты, затем начисления: каждое засчитанное выполнение —
- * отдельная строка (2 × EMS = 2 строки, 60 домов = 2 строки «Ограбление 30 домов · 2»).
+ * отдельная строка (2 × EMS = 2 строки, 40 домов = 2 строки «Ограбление 20 домов · 2»).
  */
 export function buildReport(input: {
   group: FactionGroup;

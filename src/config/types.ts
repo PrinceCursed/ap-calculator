@@ -25,7 +25,7 @@ export interface BaseRule {
   oncePerDay?: boolean;
   /** Краткое пояснение условия (показывается подсказкой). */
   hint?: string;
-  /** Название строки в картинке-отчёте («Ограбление 30 домов»). По умолчанию title. */
+  /** Название строки в картинке-отчёте («Ограбление 20 домов»). По умолчанию title. */
   reportTitle?: string;
 }
 
@@ -61,7 +61,7 @@ export interface PerLineRule extends BaseRule, PhraseMatcher {
 export interface PerCountRule extends BaseRule, PhraseMatcher {
   type: 'perCount';
   per: number;
-  /** Подпись единиц в спорных случаях: «27 из 30 домов». */
+  /** Подпись единиц в спорных случаях: «17 из 20 домов». */
   unitLabel: string;
 }
 

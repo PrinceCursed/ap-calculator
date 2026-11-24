@@ -137,24 +137,24 @@ describe('Модель отчёта', () => {
     expect(rows).toHaveLength(2);
     expect(rows.every((r) => r.kind === 'earn' && r.ap === ach(lines(...ems('12:00:00')), 'ems').unitPoints)).toBe(true);
   });
-  it('60 домов = две строки «Ограбление 30 домов · 2»', () => {
-    const m = model(lines(...houses(60)));
+  it('40 домов = две строки «Ограбление 20 домов · 2»', () => {
+    const m = model(lines(...houses(40)));
     expect(m.rows).toEqual([
-      { kind: 'earn', title: 'Ограбление 30 домов', ap: 2 },
-      { kind: 'earn', title: 'Ограбление 30 домов', ap: 2 },
+      { kind: 'earn', title: 'Ограбление 20 домов', ap: 2 },
+      { kind: 'earn', title: 'Ограбление 20 домов', ap: 2 },
     ]);
     expect(m.capped).toBe(false);
     expect(m.rows.some((r) => r.kind === 'cap')).toBe(false);
   });
   it('сначала траты, затем начисления; ручные — по строке на выполнение; корректировка одной строкой', () => {
-    const m = model(lines(...houses(30)), {
+    const m = model(lines(...houses(20)), {
       manual: { m_bank: 2 },
       adjust: -1,
       spends: { packs: { mats: 3 }, custom: [] },
     });
     expect(m.rows.map((r) => `${r.kind}:${r.title}:${r.ap}`)).toEqual([
       'spend:3000 матов:30',
-      'earn:Ограбление 30 домов:2',
+      'earn:Ограбление 20 домов:2',
       'earn:Захват банка:5',
       'earn:Захват банка:5',
       'earn:Ручная корректировка:-1',
@@ -162,7 +162,7 @@ describe('Модель отчёта', () => {
     expect(m).toMatchObject({ earned: 11, spent: 30, net: -19 });
   });
   it('при превышении лимита — строка «Лимит 30 AP: набрано 47, урезано 17» в самом низу', () => {
-    const m = model(lines(...houses(30)), { manual: { m_gov_capture: 3 }, spends: { packs: { analgesic: 1 }, custom: [] } }); // 2 + 45 = 47
+    const m = model(lines(...houses(20)), { manual: { m_gov_capture: 3 }, spends: { packs: { analgesic: 1 }, custom: [] } }); // 2 + 45 = 47
     expect(m).toMatchObject({ earnedRaw: 47, earned: 30, spent: 10, net: 20, capped: true, cut: 17 });
     expect(m.rows.at(-1)).toEqual({ kind: 'cap', title: 'Лимит 30 AP: набрано 47, урезано 17', ap: 17 });
   });
@@ -176,7 +176,7 @@ describe('Модель отчёта', () => {
 
 describe('Рендер картинки-отчёта', () => {
   it('узел строится: ширина 900 px, строки есть, кириллица на месте', () => {
-    const m = model(lines(...houses(60)), { spends: { packs: { analgesic: 3 }, custom: [] }, manual: { m_gov_capture: 2 } });
+    const m = model(lines(...houses(40)), { spends: { packs: { analgesic: 3 }, custom: [] }, manual: { m_gov_capture: 2 } });
     render(<ReportCard model={m} faction={gangs.factions[0]} logo={null} />);
     const card = screen.getByTestId('report-card');
     expect(REPORT_WIDTH).toBe(900);
@@ -184,7 +184,7 @@ describe('Рендер картинки-отчёта', () => {
     expect(card.style.fontFamily).toContain('IBM Plex Sans');
     const text = card.textContent!;
     expect(text).toMatch(/[А-Яа-яЁё]/);
-    for (const s of ['The Ballas Gang', 'Дата', 'Активность / бонус', 'Начислено', 'Потрачено', 'Итог дня', '300 анальгетика', 'Ограбление 30 домов', 'AP Calculator']) {
+    for (const s of ['The Ballas Gang', 'Дата', 'Активность / бонус', 'Начислено', 'Потрачено', 'Итог дня', '300 анальгетика', 'Ограбление 20 домов', 'AP Calculator']) {
       expect(text).toContain(s);
     }
     expect(screen.getByTestId('report-total').textContent).toContain('Итог дня 0 AP'); // 4 + 30 = 34 → лимит 30, − 30 трат
@@ -193,7 +193,7 @@ describe('Рендер картинки-отчёта', () => {
     expect(screen.getByTestId('report-row-cap').textContent).toBe('Лимит 30 AP: набрано 34, урезано 4');
   });
   it('отрицательный итог с минусом', () => {
-    const m = model(lines(...houses(30)), { spends: { packs: { car: 1 }, custom: [] } });
+    const m = model(lines(...houses(20)), { spends: { packs: { car: 1 }, custom: [] } });
     render(<ReportCard model={m} faction={gangs.factions[0]} logo={null} />);
     expect(screen.getByTestId('report-total').textContent).toContain('Итог дня −48 AP');
   });
@@ -222,7 +222,7 @@ describe('Траты в App: сброс при смене фракции и да
     localStorage.setItem('ap-faction', 'ballas');
   });
 
-  const log = lines(...houses(30), ...houses(30).map((l) => l.replace('09.11.2026', '10.11.2026')), L('02:00:00', P(1), 'Взламывает дом #x.'));
+  const log = lines(...houses(20), ...houses(20).map((l) => l.replace('09.11.2026', '10.11.2026')), L('02:00:00', P(1), 'Взламывает дом #x.'));
   const upload = async (name: string) => {
     const input = document.querySelector('input[type=file]') as HTMLInputElement;
     await act(async () => {

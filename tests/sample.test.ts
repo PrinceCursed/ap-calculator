@@ -21,13 +21,13 @@ describe('samples/sample-ballas.txt целиком', () => {
     expect(get('gunshop_success').count).toBe(1);
     expect(get('gunshop_attack').count).toBe(1);
     expect(get('houses').count).toBe(1);
-    expect(get('robbery').count).toBe(1);
+    expect(get('robbery')).toMatchObject({ count: 2, total: 4 });
     expect(get('airdrop').count).toBe(1);
     expect(get('racket').count).toBe(1);
     expect(get('flag').count).toBe(1);
     expect(get('blackmarket').count).toBe(0);
-    // 3+2+2+2+4+3+2+2+3+4+2+2 = 31 → лимит 30
-    expect(a.result!.autoSum).toBe(31);
+    // 3+2+2+2+4+3+2+2+4+4+2+2 = 32 → лимит 30
+    expect(a.result!.autoSum).toBe(32);
   });
   it('спорные случаи с цифрами', () => {
     const reasons = a.result!.disputed.map((d) => `${d.title}: ${d.reason}`);
@@ -35,9 +35,9 @@ describe('samples/sample-ballas.txt целиком', () => {
       expect.arrayContaining([
         'Поезд: 6 из 10 участников',
         'Граффити-вары: 1 из 3 побед',
-        'Ограбление домов: 3 из 30 домов',
-        'Угонки: 12 из 30 машин',
-        'Ограбление игроков: 1 из 20 ограблений',
+        'Ограбление домов: 13 из 20 домов',
+        'Угонки: 12 из 15 машин',
+        'Ограбление игроков: 1 из 10 ограблений',
         'Чёрный рынок: 8 из 10 участников',
       ]),
     );

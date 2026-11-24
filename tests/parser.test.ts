@@ -55,7 +55,7 @@ describe('парсер строк', () => {
   it('«#65» и «⁠137» оба считаются как дом', () => {
     const a = analyze(loadFiles([{ name: 'f', text: fixture }]), 'ballas', '09.11.2026');
     const d = a.result!.disputed.find((x) => x.ruleId === 'houses')!;
-    expect(d.reason).toBe('2 из 30 домов');
+    expect(d.reason).toBe('2 из 20 домов');
   });
 
   it('повторная загрузка того же файла не удваивает строки', () => {

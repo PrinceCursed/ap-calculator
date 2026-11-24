@@ -33,14 +33,14 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
 
   it('«Найдено в файле»: домов 1 из 30, граффити 0 из 3', () => {
     expect(houses.count).toBe(0);
-    expect(houses.progress).toMatchObject({ found: 1, need: 30 });
-    expect(houses.progress.text).toBe('1 из 30 домов');
+    expect(houses.progress).toMatchObject({ found: 1, need: 20 });
+    expect(houses.progress.text).toBe('1 из 20 домов');
     expect(a.result!.achievements.find((x) => x.id === 'graffiti')!.progress.text).toBe('0 из 3 побед');
   });
 
   it('ненулевой прогресс без зачёта дублируется в «Спорных» с теми же цифрами', () => {
     const d = a.result!.disputed.find((x) => x.ruleId === 'houses')!;
-    expect(d.reason).toBe('1 из 30 домов');
+    expect(d.reason).toBe('1 из 20 домов');
     for (const ach of a.result!.achievements) {
       if (ach.count === 0 && ach.progress.found > 0) expect(a.result!.disputed.some((x) => x.ruleId === ach.ruleId), ach.id).toBe(true);
     }
@@ -66,7 +66,7 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
     expect(a.result!.unmatched.top.map((t) => t.text)).toContain('Создает 12mm');
   });
 
-  it('интерфейс: «0 / 30 AP (по неполному логу)», жёлтая строка (в файле 09.11 идёт 23:36:02–23:55:29), даты, «1 из 30 домов», диагностика', () => {
+  it('интерфейс: «0 / 30 AP (по неполному логу)», жёлтая строка (в файле 09.11 идёт 23:36:02–23:55:29), даты, «1 из 20 домов», диагностика', () => {
     const { container } = render(
       <>
         <DateSummary dates={a.dates} current={a.date} onPick={() => {}} />
@@ -82,7 +82,7 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
     expect(screen.getByTestId('total').textContent).toBe('0/ 30 AP (по неполному логу)');
     expect(screen.getByTestId('coverage-warning').textContent).toContain('Файл покрывает только 23:36–23:55 (20 мин, 38 строк)');
     expect(screen.getByTestId('date-summary').textContent).toBe('В файле:09.11 — 38 строк10.11 — 12 строк');
-    expect(screen.getByTestId('progress-houses').textContent).toBe('1 из 30 домов');
+    expect(screen.getByTestId('progress-houses').textContent).toBe('1 из 20 домов');
     fireEvent.click(screen.getByText('Диагностика разбора'));
     expect(container.textContent).toContain('Берет набор Броня… — 10');
   });
@@ -177,6 +177,6 @@ describe('Реальный формат: разделители, CRLF, коди�
     ].join('\n');
     const a = run(t, 'families', '09.11.2026').a;
     expect(a.dayLines).toBe(2);
-    expect(a.result!.achievements.find((x) => x.id === 'robbery')!.progress.text).toBe('2 из 20 ограблений');
+    expect(a.result!.achievements.find((x) => x.id === 'robbery')!.progress.text).toBe('2 из 10 ограблений');
   });
 });
