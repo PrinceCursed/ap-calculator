@@ -1,4 +1,4 @@
-import { Calendar, ChevronDown, FileText, FileX, Moon, Sun, Upload } from 'lucide-react';
+import { ChevronDown, FileText, FileX, Moon, Sun, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { findFaction, GROUPS, isFactionEnabled, isFactionSelectable } from './config';
 import type { ManualRule } from './config/types';
@@ -6,16 +6,19 @@ import { manualCount } from './lib/engine';
 import type { Analysis } from './lib/pipeline';
 import type { FromWorker, LoadInfo, ToWorker } from './worker/protocol';
 import { buildReport } from './lib/report';
-import { EMPTY_SPENDS, spendList, spentTotal, type SpendState } from './lib/spend';
+import { dayTotal, EMPTY_SPENDS, spendList, spentTotal, type SpendState } from './lib/spend';
 import { BrandLogo } from './components/BrandLogo';
 import { ReportModal } from './components/Report';
 import { SpendsTab } from './components/Spends';
 import { FactionLogo } from './components/FactionLogo';
 import { FactionPicker } from './components/FactionPicker';
 import { CoverageWarning, DateSummary, Diagnostics, FoundInFile } from './components/Diagnostics';
+import { HourlyActivity } from './components/HourlyActivity';
+import calendarIcon from './assets/night/calendar.webp';
+import pointsIcon from './assets/night/points.webp';
+import reportIcon from './assets/night/report.webp';
 import {
   AchievementsTable,
-  DisputedTable,
   formatBytes,
   ManualGrid,
   ResultTabs,
@@ -186,6 +189,7 @@ export default function App() {
   const result = analysis?.result;
   const spendItems = spendList(spends, activeGroup.shop);
   const spent = spentTotal(spendItems);
+  const net = result ? dayTotal(result.autoSum + manualSum + adjust, activeGroup.dailyCap, spent).net : null;
   const fileLabel = (info?.files ?? pending?.names ?? []).join(', ');
   const fileBytes = info?.bytes ?? pending?.bytes ?? 0;
   const pct = progress.phase === 'compute' ? 100 : progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -283,15 +287,15 @@ export default function App() {
           fileSize={info.bytes}
           lines={info.total}
           spent={spent}
-          onReport={() => setReportOpen(true)}
         />
+        <HourlyActivity key={`${factionId}-${analysis.date}`} counts={analysis.hourly} />
         <div className="result-tabs">
-          <ResultTabs tab={tab} onTab={setTab} disputed={result.disputed.length} />
-          {tab === 'ach' && <AchievementsTable items={result.achievements} />}
-          {tab === 'disp' && <DisputedTable items={result.disputed} />}
+          <ResultTabs tab={tab} onTab={setTab} />
+          {tab === 'ach' && <AchievementsTable key={`${factionId}-${analysis.date}`} items={result.achievements} incomplete={result.disputed} />}
           {tab === 'man' && (
             <ManualGrid
               rules={manualRules}
+              incomplete={result.disputed}
               counts={manual}
               adjust={adjust}
               onCount={(id, n) => setManual((m) => ({ ...m, [id]: n }))}
@@ -387,29 +391,40 @@ export default function App() {
         }}
       >
         <header className="head">
-          <FactionLogo key={faction.id} faction={faction} size={52} />
           <div className="head-title">
-            <div className="kicker kicker-mut">РАСЧЁТ ACTIVITY POINTS</div>
+            <div className="head-category">{activeGroup.tab === 'crime' ? 'Crime' : 'Гос'} / {activeGroup.title}</div>
             <h1>{faction.name}</h1>
           </div>
-          <label className={`date-pill ${analysis?.date ? '' : 'is-empty'}`}>
-            <Calendar {...ICON} aria-hidden className="muted" />
+          <div className="head-actions">
             {analysis?.dates.length ? (
-              <select value={date ?? ''} onChange={(e) => chooseDate(e.target.value)} aria-label="Дата" disabled={status === 'loading'}>
-                {analysis.dates.map((d) => (
-                  <option key={d.date} value={d.date}>
-                    {d.date} · {fmt(d.count)} строк
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span>Определится из логов</span>
+              <label className="date-pill">
+                <img className="night-icon" src={calendarIcon} alt="" />
+                <select value={date ?? ''} onChange={(e) => chooseDate(e.target.value)} aria-label="Дата" disabled={status === 'loading'}>
+                  {analysis.dates.map((d) => (
+                    <option key={d.date} value={d.date}>
+                      {d.date} · {fmt(d.count)} строк
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {result && (
+              <button type="button" className="btn head-report" onClick={() => setReportOpen(true)} data-testid="report-btn">
+                <img className="night-icon" src={reportIcon} alt="" />
+                Отчёт
+              </button>
             )}
-          </label>
-          <button className="btn btn-acc" onClick={pick} disabled={status === 'loading'}>
-            <Upload {...ICON} aria-hidden />
-            Загрузить логи
-          </button>
+            <button type="button" className="btn head-upload" onClick={pick} disabled={status === 'loading'}>
+              <Upload {...ICON} aria-hidden />
+              Загрузить логи
+            </button>
+          </div>
+          {net !== null && (
+            <div className="head-total">
+              <div><img className="night-icon" src={pointsIcon} alt="" />Итог дня</div>
+              <strong className={net < 0 ? 'is-negative' : ''} data-testid="net">{net < 0 ? `−${-net}` : net}</strong> <span>AP</span>
+            </div>
+          )}
           <input
             ref={inputRef}
             type="file"

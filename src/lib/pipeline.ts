@@ -1,7 +1,7 @@
 import type { FactionGroup } from '../config/types';
 import { findFaction, GROUPS, isFactionEnabled } from '../config';
 import { runRules, type EngineResult } from './engine';
-import { buildFactionResolver, parseLog, type LogLine } from './parser';
+import { buildFactionResolver, normFaction, parseLog, ROW_SEPARATOR, type LogLine } from './parser';
 
 export interface InputFile {
   name: string;
@@ -29,7 +29,8 @@ export function loadFiles(
   groups: FactionGroup[] = GROUPS,
 ): Loaded {
   const known = allFactionNames(groups);
-  const totalRows = files.reduce((s, f) => s + f.text.split('\n').length, 0) || 1;
+  const rowCounts = files.map((f) => f.text.split(ROW_SEPARATOR).length);
+  const totalRows = rowCounts.reduce((sum, count) => sum + count, 0) || 1;
   let offset = 0;
   const seen = new Set<string>();
   const lines: LogLine[] = [];
@@ -43,12 +44,12 @@ export function loadFiles(
       file: fi,
       onProgress: (done) => onProgress?.(offset + done, totalRows),
     });
-    offset += f.text.split('\n').length;
+    offset += rowCounts[fi];
     total += r.stats.total;
     skipped += r.stats.skipped;
     for (const ex of r.stats.examples) if (unparsedExamples.length < 5) unparsedExamples.push(ex);
     for (const l of r.lines) {
-      const k = `${l.id}|${l.ts}|${l.nick}|${l.text}`;
+      const k = JSON.stringify([l.id, l.ts, l.nick, l.staticId, normFaction(l.faction), l.text]);
       if (seen.has(k)) {
         duplicates++;
         continue;
@@ -71,6 +72,8 @@ export interface Analysis {
   dates: DateCount[];
   factionLines: number;
   dayLines: number;
+  /** Число строк выбранной фракции по каждому часу суток. */
+  hourly: number[];
   ignoredOtherFaction: number;
   ignoredOtherDate: number;
   result: EngineResult | null;
@@ -232,12 +235,14 @@ export function analyze(
     factionLines: mine.length,
     ignoredOtherFaction: loaded.lines.length - mine.length,
   };
-  if (!chosen) return { ...base, date: null, dayLines: 0, ignoredOtherDate: 0, result: null, coverage: null };
+  const hourly = Array<number>(24).fill(0);
+  if (!chosen) return { ...base, date: null, dayLines: 0, hourly, ignoredOtherDate: 0, result: null, coverage: null };
 
   // День определяется по дате, записанной в строке (ДД.ММ.ГГГГ), без часовых поясов.
   const day = dayRange(chosen);
   const inDay = mine.filter((l) => l.date === chosen);
+  for (const line of inDay) hourly[Number(line.time.slice(0, 2))]++;
   const dayLines = inDay.length;
   const result = dayLines ? runRules(found.rules, mine, day) : null;
-  return { ...base, date: chosen, dayLines, ignoredOtherDate: mine.length - dayLines, result, coverage: coverageOf(inDay) };
+  return { ...base, date: chosen, dayLines, hourly, ignoredOtherDate: mine.length - dayLines, result, coverage: coverageOf(inDay) };
 }

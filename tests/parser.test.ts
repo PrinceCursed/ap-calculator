@@ -50,17 +50,31 @@ describe('парсер строк', () => {
     expect(a.dayLines).toBe(5); // 501, 502, 503, 504 (алиас Ballas), 507
     expect(a.ignoredOtherFaction).toBe(1); // Vagos
     expect(a.ignoredOtherDate).toBe(1); // 08.11
+    expect(a.hourly.slice(14, 16)).toEqual([4, 1]);
+    expect(a.hourly.reduce((sum, hours) => sum + hours, 0)).toBe(a.dayLines);
   });
 
   it('«#65» и «⁠137» оба считаются как дом', () => {
     const a = analyze(loadFiles([{ name: 'f', text: fixture }]), 'ballas', '09.11.2026');
     const d = a.result!.disputed.find((x) => x.ruleId === 'houses')!;
-    expect(d.reason).toBe('2 из 20 домов');
+    expect(d.reason).toBe('2 из 20 домов (не хватило 18)');
   });
 
   it('повторная загрузка того же файла не удваивает строки', () => {
     const l = loadFiles([{ name: 'a', text: fixture }, { name: 'b', text: fixture }]);
     expect(l.lines.length).toBe(7);
     expect(l.duplicates).toBe(7);
+  });
+
+  it('сохраняет строки с тем же ID, временем и текстом, если различаются фракция или статик', () => {
+    const text = [
+      '501\tJohn [123]\tThe Ballas Gang\tНападает на Тату салон\t09.11.2026, 14:00:01',
+      '501\tJohn [123]\tThe Families\tНападает на Тату салон\t09.11.2026, 14:00:01',
+      '501\tJohn [124]\tThe Ballas Gang\tНападает на Тату салон\t09.11.2026, 14:00:01',
+    ].join('\r');
+    const loaded = loadFiles([{ name: 'a', text }, { name: 'b', text }]);
+    expect(loaded).toMatchObject({ total: 6, skipped: 0, duplicates: 3 });
+    expect(loaded.lines).toHaveLength(3);
+    expect(analyze(loaded, 'ballas', null).dayLines).toBe(2);
   });
 });

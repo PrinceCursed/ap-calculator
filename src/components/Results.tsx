@@ -1,9 +1,9 @@
 import {
   Banknote,
   Car,
+  Check,
   ChevronDown,
   Handshake,
-  Image as ImageIcon,
   Landmark,
   Minus,
   Newspaper,
@@ -14,7 +14,7 @@ import {
   UserX,
   type LucideIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState, useSyncExternalStore } from 'react';
 import type { ManualRule } from '../config/types';
 import { applyCap, manualCount, type AchievementResult, type DisputedCase } from '../lib/engine';
 import { Evidence } from './Evidence';
@@ -42,12 +42,9 @@ export function Summary(props: {
   partial?: boolean;
   /** Потрачено AP за день (вкладка «Траты»). */
   spent?: number;
-  /** Открыть окно картинки-отчёта. */
-  onReport?: () => void;
 }) {
   const c = applyCap(props.auto + props.manual + props.adjust, props.cap);
   const spent = props.spent ?? 0;
-  const net = c.total - spent;
   return (
     <section className="summary">
       <div className="summary-main">
@@ -80,23 +77,9 @@ export function Summary(props: {
           <span>
             Потрачено <b data-testid="spent">{spent}</b>
           </span>
-          <span className="sep">·</span>
-          <span>
-            Итог дня{' '}
-            <b className={net < 0 ? 'neg-tx' : ''} data-testid="net">
-              {net < 0 ? `−${-net}` : net}
-            </b>{' '}
-            AP
-          </span>
         </div>
       </div>
       <div className="summary-file small muted">
-        {props.onReport && (
-          <button className="btn btn-outline btn-sm summary-report" onClick={props.onReport} data-testid="report-btn">
-            <ImageIcon size={16} strokeWidth={1.5} aria-hidden />
-            Отчёт
-          </button>
-        )}
         <span className="mono summary-fname">{props.fileName}</span>
         <span>
           {formatBytes(props.fileSize)} · {fmt(props.lines)} строк
@@ -106,21 +89,19 @@ export function Summary(props: {
   );
 }
 
-export type ResultTab = 'ach' | 'disp' | 'man' | 'spend';
+export type ResultTab = 'ach' | 'man' | 'spend';
 
-export function ResultTabs({ tab, onTab, disputed }: { tab: ResultTab; onTab: (t: ResultTab) => void; disputed: number }) {
-  const tabs: [ResultTab, string, string][] = [
-    ['ach', 'Достижения', 'Достижения'],
-    ['disp', `Спорные случаи (${disputed})`, `Спорные (${disputed})`],
-    ['man', 'Ручные', 'Ручные'],
-    ['spend', 'Траты', 'Траты'],
+export function ResultTabs({ tab, onTab }: { tab: ResultTab; onTab: (t: ResultTab) => void }) {
+  const tabs: [ResultTab, string][] = [
+    ['ach', 'Достижения'],
+    ['man', 'Ручные'],
+    ['spend', 'Траты'],
   ];
   return (
     <div className="seg seg-tabs" role="tablist" aria-label="Результат">
-      {tabs.map(([id, long, short]) => (
+      {tabs.map(([id, label]) => (
         <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => onTab(id)}>
-          <span className="only-desk">{long}</span>
-          <span className="only-mob">{short}</span>
+          {label}
         </button>
       ))}
     </div>
@@ -133,95 +114,108 @@ const Chevron = ({ open }: { open: boolean }) => (
   </span>
 );
 
-export function AchievementsTable({ items }: { items: AchievementResult[] }) {
-  const [open, setOpen] = useState<Record<string, boolean>>({});
-  const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }));
-  return (
-    <div className="panel">
-      <div className="trow thead ach-cols">
-        <span>Достижение</span>
-        <span className="only-desk">Найдено в файле</span>
-        <span className="only-desk">За ед.</span>
-        <span className="only-desk">Засчитано</span>
-        <span className="right">Итого</span>
-        <span />
-      </div>
-      {items.map((a) => {
-        const isOpen = !!open[a.id];
-        const zero = a.count === 0;
-        const partial = zero && a.progress.found > 0;
-        return (
-          <div className="tgroup" key={a.id}>
-            <div
-              className={`trow ach-cols is-click ${partial ? 'is-partial' : zero ? 'is-zero' : 'is-ok'}`}
-              data-testid={`ach-${a.id}`}
-              onClick={() => toggle(a.id)}
-              role="button"
-              tabIndex={0}
-              aria-expanded={isOpen}
-              title={a.hint}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle(a.id))}
-            >
-              <span className="tname">
-                <span className={`dot ${partial ? 'dot-amber' : zero ? 'dot-empty' : 'dot-acc'}`} />
-                <span className="tname-text">
-                  <span>{a.title}</span>
-                  <span className="only-mob small muted">
-                    +{a.unitPoints} за ед. · ×{a.count} · {a.progress.text}
-                  </span>
-                  {a.droppedByOncePerDay ? <span className="small muted">раз в день: отброшено {a.droppedByOncePerDay}</span> : null}
-                </span>
-              </span>
-              <span className={`only-desk mono small ${partial ? 'amber' : 'muted'}`} data-testid={`progress-${a.id}`}>
-                {a.progress.text}
-              </span>
-              <span className="only-desk mono muted">+{a.unitPoints}</span>
-              <span className="only-desk mono">{a.count}</span>
-              <span className="right mono strong">{zero ? '0' : `+${a.total}`}</span>
-              <Chevron open={isOpen} />
-            </div>
-            {isOpen && <Evidence occurrences={a.occurrences} tone="acc" />}
-          </div>
-        );
-      })}
-    </div>
-  );
+const evidenceLayout = '(min-width: 1060px)';
+function subscribeToLayout(callback: () => void) {
+  const query = window.matchMedia?.(evidenceLayout);
+  query?.addEventListener('change', callback);
+  return () => query?.removeEventListener('change', callback);
 }
+const sideBySide = () => window.matchMedia?.(evidenceLayout)?.matches ?? false;
 
-export function DisputedTable({ items }: { items: DisputedCase[] }) {
-  const [open, setOpen] = useState<Record<string, boolean>>({});
-  const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }));
-  if (items.length === 0) return <div className="panel panel-pad muted">Спорных случаев нет</div>;
+export function AchievementsTable({ items, incomplete = [] }: { items: AchievementResult[]; incomplete?: DisputedCase[] }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [onlyIncomplete, setOnlyIncomplete] = useState(false);
+  const showBeside = useSyncExternalStore(subscribeToLayout, sideBySide, () => false);
+  const evidenceId = useId();
+  const byAchievement = new Map<string, DisputedCase[]>();
+  for (const attempt of incomplete) {
+    const cases = byAchievement.get(attempt.achievementId);
+    if (cases) cases.push(attempt);
+    else byAchievement.set(attempt.achievementId, [attempt]);
+  }
+  const partialItems = items.filter((a) => !a.count && byAchievement.has(a.id));
+  const visible = onlyIncomplete ? partialItems : items;
+  const active = visible.find((a) => a.id === selected);
   return (
-    <div className="panel">
-      <div className="trow thead disp-cols">
-        <span>Что было похоже</span>
-        <span>Результат</span>
-        <span />
-      </div>
-      {items.map((d) => {
-        const isOpen = !!open[d.id];
-        return (
-          <div className="tgroup" key={d.id}>
-            <div
-              className="trow disp-cols is-click"
-              onClick={() => toggle(d.id)}
-              role="button"
-              tabIndex={0}
-              aria-expanded={isOpen}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle(d.id))}
-            >
-              <span className="tname">
-                <span className="dot dot-amber" />
-                {d.title}
-              </span>
-              <span className="mono amber small">{d.reason}</span>
-              <Chevron open={isOpen} />
-            </div>
-            {isOpen && <Evidence steps={d.steps} tone="amber" />}
+    <div className="achievement-view">
+      {partialItems.length > 0 && (
+        <div className="achievement-tools">
+          <button
+            type="button"
+            className="btn btn-sm achievement-filter"
+            aria-pressed={onlyIncomplete}
+            onClick={() => setOnlyIncomplete(!onlyIncomplete)}
+          >
+            Только недобор <span className="mono">{partialItems.length}</span>
+          </button>
+        </div>
+      )}
+      <div className={`achievement-workspace${showBeside ? ' has-inspector' : ''}`}>
+        <div className="panel achievement-list">
+          <div className="trow thead ach-cols">
+            <span>Достижение</span>
+            <span className="only-desk">Найдено в файле</span>
+            <span className="only-desk ach-extra">За ед.</span>
+            <span className="only-desk ach-extra">Засчитано</span>
+            <span className="right">Итого</span>
+            <span />
           </div>
-        );
-      })}
+          {visible.map((a) => {
+            const cases = byAchievement.get(a.id) ?? [];
+            const completed = a.count > 0;
+            const partial = !completed && cases.length > 0;
+            const hasEvidence = completed || partial;
+            const isOpen = hasEvidence && active?.id === a.id;
+            const Row = hasEvidence ? 'button' : 'div';
+            const progress = partial && cases.length === 1 ? cases[0].reason : a.progress.text;
+            const label = completed ? 'Засчитано' : partial ? 'Частично выполнено' : 'Активность не найдена';
+            return (
+              <div className="tgroup" key={a.id}>
+                <Row
+                  className={`trow ach-cols ${completed ? 'is-click is-ok' : partial ? 'is-click is-partial' : 'is-zero'}`}
+                  data-testid={`ach-${a.id}`}
+                  type={hasEvidence ? 'button' : undefined}
+                  onClick={hasEvidence ? () => setSelected(isOpen ? null : a.id) : undefined}
+                  aria-expanded={hasEvidence ? isOpen : undefined}
+                  aria-controls={isOpen || (hasEvidence && showBeside) ? evidenceId : undefined}
+                  title={a.hint}
+                >
+                  <span className="tname">
+                    <span className={`ach-status ${completed ? 'is-checked' : partial ? 'is-incomplete' : 'is-empty'}`} role="img" aria-label={label}>
+                      {completed && <Check size={11} strokeWidth={2.5} aria-hidden />}
+                    </span>
+                    <span className="tname-text">
+                      <span>{a.title}</span>
+                      <span className="only-mob small muted">
+                        +{a.unitPoints} за ед. · ×{a.count} · {progress}
+                      </span>
+                      {a.droppedByOncePerDay ? <span className="small muted">раз в день: отброшено {a.droppedByOncePerDay}</span> : null}
+                    </span>
+                  </span>
+                  <span className={`only-desk mono small ${partial ? 'amber' : 'muted'}`} data-testid={`progress-${a.id}`}>
+                    {progress}
+                  </span>
+                  <span className="only-desk mono muted ach-extra">+{a.unitPoints}</span>
+                  <span className="only-desk mono ach-extra">{a.count}</span>
+                  <span className="right mono strong">{completed ? `+${a.total}` : '0'}</span>
+                  {hasEvidence ? <Chevron open={isOpen} /> : <span />}
+                </Row>
+                {isOpen && !showBeside && <div id={evidenceId}><Evidence occurrences={a.occurrences} incomplete={cases} /></div>}
+              </div>
+            );
+          })}
+        </div>
+        {showBeside && (
+          <aside className="panel achievement-inspector" id={evidenceId} aria-label="Доказательства">
+            {active ? (
+              <>
+                <h2>{active.title}</h2>
+                <Evidence key={active.id} occurrences={active.occurrences} incomplete={byAchievement.get(active.id)} />
+              </>
+            ) : <p className="small muted">Выберите достижение, чтобы увидеть строки лога.</p>}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
@@ -240,12 +234,14 @@ const MANUAL_ICONS: Record<string, LucideIcon> = {
 
 export function ManualGrid({
   rules,
+  incomplete = [],
   counts,
   adjust,
   onCount,
   onAdjust,
 }: {
   rules: ManualRule[];
+  incomplete?: DisputedCase[];
   counts: Record<string, number>;
   adjust: number;
   onCount: (id: string, n: number) => void;
@@ -257,6 +253,7 @@ export function ManualGrid({
         {rules.map((r) => {
           const n = manualCount(r, counts[r.id]);
           const Icon = MANUAL_ICONS[r.id] ?? Star;
+          const review = r.evidence ? incomplete.find((d) => d.achievementId === r.id) : undefined;
           return (
             <div key={r.id} className={`mcard ${n > 0 ? 'is-on' : ''}`}>
               <span className="mcard-icon">
@@ -276,6 +273,12 @@ export function ManualGrid({
                   <Plus size={14} strokeWidth={1.5} />
                 </button>
               </span>
+              {review && (
+                <details className="mcard-evidence">
+                  <summary className="small amber">Строки для ручной проверки</summary>
+                  <Evidence incomplete={[review]} />
+                </details>
+              )}
             </div>
           );
         })}

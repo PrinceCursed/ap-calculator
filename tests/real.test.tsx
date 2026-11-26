@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CoverageWarning, DateSummary, Diagnostics } from '../src/components/Diagnostics';
-import { AchievementsTable, Summary } from '../src/components/Results';
+import { AchievementsTable, ResultTabs, Summary } from '../src/components/Results';
 import { decodeBytes } from '../src/lib/decode';
 import { analyze, loadFiles } from '../src/lib/pipeline';
 
@@ -38,9 +38,9 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
     expect(a.result!.achievements.find((x) => x.id === 'graffiti')!.progress.text).toBe('0 из 3 побед');
   });
 
-  it('ненулевой прогресс без зачёта дублируется в «Спорных» с теми же цифрами', () => {
+  it('неполное выполнение содержит прогресс и недобор', () => {
     const d = a.result!.disputed.find((x) => x.ruleId === 'houses')!;
-    expect(d.reason).toBe('1 из 20 домов');
+    expect(d.reason).toBe('1 из 20 домов (не хватило 19)');
     for (const ach of a.result!.achievements) {
       if (ach.count === 0 && ach.progress.found > 0) expect(a.result!.disputed.some((x) => x.ruleId === ach.ruleId), ach.id).toBe(true);
     }
@@ -72,7 +72,7 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
         <DateSummary dates={a.dates} current={a.date} onPick={() => {}} />
         <CoverageWarning coverage={a.coverage!} />
         <Summary auto={0} manual={0} adjust={0} cap={30} date={a.date!} fileName="real.txt" fileSize={5826} lines={50} partial />
-        <AchievementsTable items={a.result!.achievements} />
+        <AchievementsTable items={a.result!.achievements} incomplete={a.result!.disputed} />
         <Diagnostics
           analysis={a}
           info={{ files: ['real.txt'], bytes: 5826, total: 50, parsed: 50, skipped: 0, duplicates: 0, unparsedExamples: [], encodings: [] }}
@@ -82,7 +82,7 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
     expect(screen.getByTestId('total').textContent).toBe('0/ 30 AP (по неполному логу)');
     expect(screen.getByTestId('coverage-warning').textContent).toContain('Файл покрывает только 23:36–23:55 (20 мин, 38 строк)');
     expect(screen.getByTestId('date-summary').textContent).toBe('В файле:09.11 — 38 строк10.11 — 12 строк');
-    expect(screen.getByTestId('progress-houses').textContent).toBe('1 из 20 домов');
+    expect(screen.getByTestId('progress-houses').textContent).toBe('1 из 20 домов (не хватило 19)');
     fireEvent.click(screen.getByText('Диагностика разбора'));
     expect(container.textContent).toContain('Берет набор Броня… — 10');
   });
@@ -99,6 +99,40 @@ describe('samples/real-families-short.txt (The Families, 09.11.2026, 50 стро
     expect(b.fileFactions).toEqual([{ name: 'The Families', id: 'families', count: 50 }]);
     expect(b.fileDates.map((d) => d.date)).toEqual(['09.11.2026', '10.11.2026']);
   });
+
+  it('показывает недобор внутри достижения и оставляет пустые строки свёрнутыми', () => {
+    render(
+      <>
+        <ResultTabs tab="ach" onTab={() => {}} />
+        <AchievementsTable items={a.result!.achievements} incomplete={a.result!.disputed} />
+      </>,
+    );
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Достижения', 'Ручные', 'Траты']);
+    const row = screen.getByTestId('ach-houses');
+    expect(row.classList.contains('is-partial')).toBe(true);
+    fireEvent.click(row);
+    expect(row.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('ДОКАЗАТЕЛЬСТВА')).toBeTruthy();
+    expect(screen.getByText(/взламывает дом/i)).toBeTruthy();
+    expect(screen.getByTestId('ach-graffiti').classList.contains('is-zero')).toBe(true);
+    expect(screen.getByTestId('ach-graffiti').hasAttribute('aria-expanded')).toBe(false);
+  });
+});
+
+it('показывает зачтённые и неполные попытки, привязывая доказательства к нужным тирам', () => {
+  const { a } = run([
+    '1\tP [1]\tThe Families\tРазгружает 500 материалов из оружейного магазина\t09.11.2026, 12:00:01',
+    '2\tP [1]\tThe Families\tРазгружает 1500 материалов из оружейного магазина\t09.11.2026, 12:01:01',
+    '3\tP [1]\tThe Families\tДоставляет грузовик с украденным из поезда грузом (100 ящиков)\t09.11.2026, 12:02:01',
+  ].join('\n'));
+  render(<AchievementsTable items={a.result!.achievements} incomplete={a.result!.disputed} />);
+  const attack = screen.getByTestId('ach-gunshop_attack');
+  expect(within(attack).getByRole('img', { name: 'Засчитано' })).toBeTruthy();
+  fireEvent.click(attack);
+  expect(screen.getByText('500 — меньше порога 1000 (не хватило 500)')).toBeTruthy();
+  expect(screen.getByText(/1500 материалов/)).toBeTruthy();
+  expect(screen.getByTestId('ach-gunshop_success').classList.contains('is-zero')).toBe(true);
+  expect(screen.getByTestId('ach-train').classList.contains('is-partial')).toBe(true);
 });
 
 describe('Полный лог за сутки — без предупреждения', () => {

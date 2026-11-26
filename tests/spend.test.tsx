@@ -230,7 +230,7 @@ describe('Траты в App: сброс при смене фракции и да
     });
     await waitFor(() => expect(screen.getByTestId('day-parts')).toBeTruthy());
   };
-  const openSpends = () => fireEvent.click(within(screen.getByRole('tablist', { name: 'Результат' })).getByText('Траты', { selector: '.only-desk' }));
+  const openSpends = () => fireEvent.click(within(screen.getByRole('tablist', { name: 'Результат' })).getByRole('tab', { name: 'Траты' }));
 
   it('сценарий', async () => {
     render(<App />);

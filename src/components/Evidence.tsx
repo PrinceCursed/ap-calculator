@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { EvLine, EvStep, Occurrence } from '../lib/engine';
+import type { DisputedCase, EvLine, EvStep, Occurrence } from '../lib/engine';
 
 const PAGE = 200;
 
@@ -49,13 +49,12 @@ function Step({ step }: { step: EvStep }) {
 }
 
 /** Раскрытая строка: «ДОКАЗАТЕЛЬСТВА» и группы строк логов по шагам. */
-export function Evidence({ occurrences, steps, tone }: { occurrences?: Occurrence[]; steps?: EvStep[]; tone: 'acc' | 'amber' }) {
+export function Evidence({ occurrences = [], incomplete = [] }: { occurrences?: Occurrence[]; incomplete?: DisputedCase[] }) {
   return (
-    <div className={`evidence tone-${tone}`}>
+    <div className="evidence">
       <div className="kicker">ДОКАЗАТЕЛЬСТВА</div>
-      {steps?.map((s, i) => <Step key={i} step={s} />)}
-      {occurrences?.map((o, i) => (
-        <div className="ev-occ" key={i}>
+      {occurrences.map((o, i) => (
+        <div className="ev-occ tone-acc" key={i}>
           {occurrences.length > 1 && (
             <div className="ev-occ-label">
               <span className="ev-occ-no">{i + 1}</span>
@@ -67,7 +66,12 @@ export function Evidence({ occurrences, steps, tone }: { occurrences?: Occurrenc
           ))}
         </div>
       ))}
-      {occurrences && occurrences.length === 0 && <div className="muted">Выполнений не найдено</div>}
+      {incomplete.map((attempt) => (
+        <div className="ev-occ tone-amber" key={attempt.id}>
+          <div className="ev-occ-label amber">{attempt.reason}</div>
+          {attempt.steps.map((step, i) => <Step key={i} step={step} />)}
+        </div>
+      ))}
     </div>
   );
 }

@@ -64,6 +64,7 @@ export interface AchievementResult {
 export interface DisputedCase {
   id: string;
   ruleId: string;
+  achievementId: string;
   title: string;
   reason: string;
   steps: EvStep[];
@@ -187,13 +188,18 @@ function makeResult(
 }
 
 let disputedSeq = 0;
-const dispute = (ruleId: string, title: string, reason: string, steps: EvStep[]): DisputedCase => ({
+const dispute = (ruleId: string, title: string, reason: string, steps: EvStep[], achievementId = ruleId): DisputedCase => ({
   id: `${ruleId}#${++disputedSeq}`,
   ruleId,
+  achievementId,
   title,
   reason,
   steps,
 });
+
+function withShortfall(reason: string, found: number, need: number): string {
+  return `${reason} (не хватило ${need - found})`;
+}
 
 // ───────────────────────── Типы правил ─────────────────────────
 
@@ -207,17 +213,20 @@ function runPerLine(rule: PerLineRule, lines: LogLine[], day: DayRange, out: Eng
   }
   const tiers = [...rule.tiers].sort((a, b) => b.min - a.min);
   const byTier = new Map<string, Occurrence[]>(tiers.map((t) => [t.id, []]));
-  const lowest = Math.min(...tiers.map((t) => t.min));
   for (const h of list) {
     const n = h.m.n;
     const tier = n === undefined ? undefined : tiers.find((t) => n >= t.min && (t.max === undefined || n <= t.max));
     if (tier) {
       byTier.get(tier.id)!.push({ label: `${h.line.time} — ${n}`, steps: [{ label: `${n} (тир «${tier.title}»)`, lines: [ev(h)] }] });
     } else {
+      const next = tiers.filter((t) => n === undefined || n < t.min).at(-1);
+      const reason = n === undefined
+        ? 'не удалось прочитать число'
+        : next ? withShortfall(`${n} — меньше порога ${next.min}`, n, next.min) : `${n} — за пределами допустимых значений`;
       out.disputed.push(
-        dispute(rule.id, rule.title, n === undefined ? 'не удалось прочитать число' : `${n} — меньше порога ${lowest}`, [
+        dispute(rule.id, rule.title, reason, [
           { label: 'Строка лога', lines: [ev(h)] },
-        ]),
+        ], (next ?? tiers[0]).id),
       );
     }
   }
@@ -244,7 +253,9 @@ function runPerCount(rule: PerCountRule, lines: LogLine[], day: DayRange, out: E
   if (rest > 0) {
     const chunk = list.slice(full * rule.per);
     out.disputed.push(
-      dispute(rule.id, rule.title, `${rest} из ${rule.per} ${rule.unitLabel}`, [{ label: `Остаток: ${rest} ${rule.unitLabel}`, lines: chunk.map(ev) }]),
+      dispute(rule.id, rule.title, withShortfall(`${rest} из ${rule.per} ${rule.unitLabel}`, rest, rule.per), [
+        { label: `${rest} ${rule.unitLabel}`, lines: chunk.map(ev) },
+      ]),
     );
   }
 }
@@ -261,7 +272,7 @@ function runCluster(rule: ClusterRule, lines: LogLine[], day: DayRange, out: Eng
     matched += g.length;
     const step = { label: `${d} ${rule.distinctLabel}, ${g.length} строк`, lines: g.map(ev) };
     if (d >= rule.minDistinct) occ.push({ label: `${span(g)} — ${d} ${rule.distinctLabel}`, steps: [step] });
-    else out.disputed.push(dispute(rule.id, rule.title, shortOf(d, rule.minDistinct, rule.distinctLabel, rule.distinctForms), [step]));
+    else out.disputed.push(dispute(rule.id, rule.title, withShortfall(shortOf(d, rule.minDistinct, rule.distinctLabel, rule.distinctForms), d, rule.minDistinct), [step]));
   }
   if (rule.soloPhrases?.length) {
     const solo = hits(lines.filter((l) => inDay(day, l)), compileMatcher({ phrases: rule.soloPhrases, actor: rule.actor }));
@@ -317,7 +328,8 @@ function runVariantCluster(rule: VariantClusterRule, lines: LogLine[], day: DayR
       if (preHit) used.add(preHit.line);
       occ.get(v.id)!.push({ label: `${span(g)} — ${d} ${rule.distinctLabel}`, steps });
     } else {
-      out.disputed.push(dispute(rule.id, v.title, shortOf(d, rule.minDistinct, rule.distinctLabel, rule.distinctForms), steps));
+      const reason = withShortfall(shortOf(d, rule.minDistinct, rule.distinctLabel, rule.distinctForms), d, rule.minDistinct);
+      out.disputed.push(dispute(rule.id, v.title, reason, steps, v.id));
     }
   }
   for (const v of rule.variants) {
@@ -370,14 +382,17 @@ function runSequence(rule: SequenceRule, lines: LogLine[], day: DayRange, out: E
     } else {
       cand.forEach((h) => seen.add(h.line));
       const reasons: string[] = [];
-      if (d < minDistinct) reasons.push(shortOf(d, minDistinct, label));
-      if (distinctGroup && !groupOk) reasons.push(shortOf(distinct, distinctGroup.minDistinct, distinctGroup.label));
-      if (!numOk)
+      if (d < minDistinct) reasons.push(withShortfall(shortOf(d, minDistinct, label), d, minDistinct));
+      if (distinctGroup && !groupOk) {
+        reasons.push(withShortfall(shortOf(distinct, distinctGroup.minDistinct, distinctGroup.label), distinct, distinctGroup.minDistinct));
+      }
+      if (rule.final.minNumber !== undefined && !numOk) {
         reasons.push(
           n === undefined
             ? 'не удалось прочитать число'
-            : `${n} ${rule.final.numberUnit ?? ''} — нужно ≥ ${rule.final.minNumber}`.replace(/\s+—/, ' —'),
+            : withShortfall(`${n} ${rule.final.numberUnit ?? ''} — нужно ≥ ${rule.final.minNumber}`.replace(/\s+—/, ' —'), n, rule.final.minNumber),
         );
+      }
       out.disputed.push(dispute(rule.id, rule.title, reasons.join('; '), steps));
     }
   }
@@ -387,9 +402,10 @@ function runSequence(rule: SequenceRule, lines: LogLine[], day: DayRange, out: E
   for (const g of groupByGap(orphans, windowMinutes)) {
     const d = distinctValues(g, 'static').size;
     best = Math.max(best, d);
-    out.disputed.push(
-      dispute(rule.id, rule.title, `${d} ${label}, но нет строки «${rule.final.label}»`, [{ label: `Шаг 1: ${d} ${label}`, lines: g.map(ev) }]),
-    );
+    const participants = d < minDistinct ? withShortfall(shortOf(d, minDistinct, label), d, minDistinct) : `${d} ${label}`;
+    out.disputed.push(dispute(rule.id, rule.title, `${participants}, но нет строки «${rule.final.label}»`, [
+      { label: `Шаг 1: ${d} ${label}`, lines: g.map(ev) },
+    ]));
   }
 
   out.achievements.push(

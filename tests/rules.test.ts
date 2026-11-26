@@ -19,7 +19,7 @@ describe('Поезд (sequence)', () => {
     expect(ach(t, 'train').count).toBe(0);
     const d = disputed(t, 'train');
     expect(d).toHaveLength(1);
-    expect(d[0].reason).toBe('6 из 10 участников');
+    expect(d[0].reason).toBe('6 из 10 участников (не хватило 4)');
     expect(d[0].steps.map((s) => s.label)).toEqual(['Шаг 1: 6 участников', 'Шаг 2: доставка, 239 ящ.']);
   });
 
@@ -36,14 +36,14 @@ describe('Поезд (sequence)', () => {
     const t = lines(...train(7, 189));
     expect(ach(t, 'train').count).toBe(0);
     const d = disputed(t, 'train');
-    expect(d[0].reason).toBe('7 из 10 участников');
+    expect(d[0].reason).toBe('7 из 10 участников (не хватило 3)');
     expect(d[0].steps[1].label).toBe('Шаг 2: доставка, 189 ящ.');
   });
 
   it('доставка ниже 125 ящ. → спорный', () => {
     const t = lines(...train(12, 100));
     expect(ach(t, 'train').count).toBe(0);
-    expect(disputed(t, 'train')[0].reason).toBe('100 ящ. — нужно ≥ 125');
+    expect(disputed(t, 'train')[0].reason).toBe('100 ящ. — нужно ≥ 125 (не хватило 25)');
   });
 
   it('участники позже доставки не считаются; участники старше 90 мин не считаются', () => {
@@ -87,7 +87,7 @@ describe('ФЗ против NG (variantCluster)', () => {
 
   it('2 грузовика из 3 → спорный', () => {
     const t = lines(...army(28, 29, '20:00:00'));
-    expect(disputed(t, 'army')[0].reason).toBe('2 грузовика из 3');
+    expect(disputed(t, 'army')[0].reason).toBe('2 грузовика из 3 (не хватило 1)');
   });
 });
 
@@ -105,7 +105,7 @@ describe('ФТ (cluster по статику освобождённого)', () =
   it('3 разных освобождённых → 2 AP, 2 → спорный', () => {
     const f = (who: number, t: string) => L(t, P(1), `Помогает Prisoner_${who}[${700 + who}] сбежать из тюрьмы`);
     expect(ach(lines(f(1, '10:00:00'), f(2, '10:05:00'), f(3, '10:30:00')), 'ft').total).toBe(2);
-    expect(disputed(lines(f(1, '10:00:00'), f(1, '10:01:00'), f(2, '10:05:00')), 'ft')[0].reason).toBe('2 из 3 освобождённых');
+    expect(disputed(lines(f(1, '10:00:00'), f(1, '10:01:00'), f(2, '10:05:00')), 'ft')[0].reason).toBe('2 из 3 освобождённых (не хватило 1)');
   });
 });
 
@@ -113,7 +113,7 @@ describe('Граффити (perCount)', () => {
   it('7 побед = 2 раза по 2 AP, остаток 1 — спорный', () => {
     const t = lines(...Array.from({ length: 7 }, (_, i) => L(at('13:00:00', i * 60), P(i), 'Получает $500 за победу в GRAFFITI WAR')));
     expect(ach(t, 'graffiti')).toMatchObject({ count: 2, total: 4 });
-    expect(disputed(t, 'graffiti')[0].reason).toBe('1 из 3 побед');
+    expect(disputed(t, 'graffiti')[0].reason).toBe('1 из 3 побед (не хватило 2)');
   });
 });
 
@@ -127,7 +127,7 @@ describe('Ганшоп (perLine с тирами)', () => {
     );
     expect(ach(t, 'gunshop_success')).toMatchObject({ count: 1, total: 3 });
     expect(ach(t, 'gunshop_attack')).toMatchObject({ count: 1, total: 2 });
-    expect(disputed(t, 'gunshop')[0].reason).toBe('500 — меньше порога 1000');
+    expect(disputed(t, 'gunshop')[0].reason).toBe('500 — меньше порога 1000 (не хватило 500)');
   });
 });
 
@@ -139,6 +139,20 @@ describe('Остальные правила', () => {
   });
 
   it.each([
+    '801 John Smith [123] The Ballas Gang Нападает на Тату салон  #8 09.11.2026, 23:59:59',
+    '802\tJohn Smith [123]\tThe Ballas Gang\tНападает на «Тату‑салон» #8\t09.11.2026, 23:59:59',
+    '803\tJohn Smith [123]\tThe Ballas Gang\tНападает на магазин «24 / 7» #8\t09.11.2026, 23:59:59',
+    '804\tJohn Smith [123]\tThe Ballas Gang  Нападает на магазин спортивной одежды\t#8\t09.11.2026, 23:59:59',
+  ])('Рэкет: учитывает десятую строку в конце дня (%s)', (last) => {
+    const attacks = Array.from({ length: 9 }, (_, i) => L(at('00:00:00', i * 60), P(i), 'Нападает на Тату салон #1'));
+    const noise = Array.from({ length: 1000 }, (_, i) => L(at('12:00:00', i), P(i), 'Пишет в рацию'));
+    const rows = [...attacks, ...noise, L('00:00:00', P(1), 'Нападает на Тату салон', { date: '10.11.2026' }), last];
+    const racket = ach(lines(...rows.reverse()), 'racket');
+    expect(racket).toMatchObject({ count: 1, total: 2, progress: { found: 10 } });
+    expect(racket.occurrences[0].steps[0].lines.at(-1)?.nick).toBe('John Smith');
+  });
+
+  it.each([
     { id: 'houses', threshold: 20, unit: 'домов', event: 'Взламывает дом' },
     { id: 'cars', threshold: 15, unit: 'машин', event: 'Привозит угнанный автомобиль' },
     { id: 'robbery', threshold: 10, unit: 'ограблений', event: 'Грабит человека' },
@@ -146,7 +160,7 @@ describe('Остальные правила', () => {
     const events = Array.from({ length: threshold * 2 }, (_, i) => L(at('01:00:00', i * 30), P(i % 5), `${event} #${i}.`));
     const below = lines(...events.slice(0, threshold - 1));
     expect(ach(below, id)).toMatchObject({ count: 0, total: 0 });
-    expect(disputed(below, id)[0].reason).toBe(`${threshold - 1} из ${threshold} ${unit}`);
+    expect(disputed(below, id)[0].reason).toBe(`${threshold - 1} из ${threshold} ${unit} (не хватило 1)`);
     expect(ach(lines(...events.slice(0, threshold)), id)).toMatchObject({ count: 1, total: 2 });
     expect(ach(lines(...events), id)).toMatchObject({ count: 2, total: 4 });
   });
@@ -164,7 +178,7 @@ describe('Остальные правила', () => {
   it('Чёрный рынок: ≥10 уникальных участников, 8 → «8 из 10 участников»', () => {
     const mk = (n: number) => Array.from({ length: n }, (_, i) => L(at('21:00:00', i * 30), P(i), 'Участвует в захвате чёрного рынка.'));
     expect(ach(lines(...mk(11)), 'blackmarket').total).toBe(4);
-    expect(disputed(lines(...mk(8)), 'blackmarket')[0].reason).toBe('8 из 10 участников');
+    expect(disputed(lines(...mk(8)), 'blackmarket')[0].reason).toBe('8 из 10 участников (не хватило 2)');
   });
 
   it('PvP: группа хаммеров = 1 мероприятие, «занимает 1 место» — отдельное', () => {

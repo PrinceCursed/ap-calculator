@@ -82,12 +82,12 @@ describe('Автоматические достижения LSPD', () => {
     const foreign = unloading(per - 1, 'Мексиканская Мафия');
     const withoutVehicles = analyzeLspd(...group(participation), ...partial, repeated, foreign);
     expect(achievement(withoutVehicles, id)).toMatchObject({ count: 0, total: 0 });
-    expect(withoutVehicles.result!.disputed).toContainEqual(expect.objectContaining({ reason: `${per - 1} из ${per} машин` }));
+    expect(withoutVehicles.result!.disputed).toContainEqual(expect.objectContaining({ reason: `${per - 1} из ${per} машин (не хватило 1)` }));
 
     const deliveries = [...partial, unloading(per - 1)];
     const withoutParticipants = analyzeLspd(...group(participation, 4), cop('12:01:00', 0, participation), ...deliveries, cop('12:00:22', 4, participation, 'LSSD'));
     expect(achievement(withoutParticipants, id)).toMatchObject({ count: 0 });
-    expect(withoutParticipants.result!.disputed).toContainEqual(expect.objectContaining({ reason: '4 из 5 участников LSPD' }));
+    expect(withoutParticipants.result!.disputed).toContainEqual(expect.objectContaining({ reason: '4 из 5 участников LSPD (не хватило 1)' }));
 
     const secondDelivery = Array.from({ length: per }, (_, i) => unloading(i, 'LSPD', at('12:45:00', i * 5)));
     const full = analyzeLspd(...group(participation), ...deliveries, ...secondDelivery);
@@ -146,7 +146,7 @@ describe('Правила отдельных гос. фракций', () => {
     ];
     const fib = analyzeGov('fib', ...rows);
     expect(achievement(fib, 'ems_supply')).toMatchObject({ total: 0 });
-    expect(fib.result!.disputed).toContainEqual(expect.objectContaining({ reason: '4 из 5 участников FIB' }));
+    expect(fib.result!.disputed).toContainEqual(expect.objectContaining({ reason: '4 из 5 участников FIB (не хватило 1)' }));
     expect(fib.badges).toEqual({ lspd: 3, lssd: 5, fib: 0 });
     expect(achievement(fib, 'returned_cars')).toBeUndefined();
 

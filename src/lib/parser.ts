@@ -48,8 +48,9 @@ export function normFaction(s: string): string {
 
 const DATE_TAIL = /(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/;
 const ID_HEAD = /^\s*(\d+)(?:\t+|\s+)/;
-const NICK = /^(.*?)\s*\[(\d+)\]$/;
+const NICK = /^(.*?)\s*\[(\d+)\](\s+)/;
 const SPLIT = /\t+|\s{2,}/;
+export const ROW_SEPARATOR = /\r\n?|\n/;
 
 const pad = (n: string | number) => String(n).padStart(2, '0');
 
@@ -82,44 +83,42 @@ export function parseLine(
   const middle = raw.slice(im[0].length, dm.index).trim();
   if (!middle) return { skip: 'empty-middle' };
 
-  let nick: string;
-  let faction: string;
-  let text: string;
+  const nk = NICK.exec(middle);
+  if (!nk) return { skip: 'no-static' };
+  const rest = middle.slice(nk[0].length);
+  const firstSeparator = SPLIT.exec(rest);
+  const tabs = nk[3].includes('\t') ? /\t+/.exec(rest) : null;
+  const spaceFaction = firstSeparator && normFaction(rest.slice(0, firstSeparator.index));
+  const mixed = tabs && firstSeparator && firstSeparator.index < tabs.index &&
+    knownFactions.some((f) => normFaction(f) === spaceFaction);
+  const separator = tabs && !mixed ? tabs : firstSeparator;
+  let faction = separator ? rest.slice(0, separator.index).trim() : '';
+  let text = separator ? rest.slice(separator.index + separator[0].length) : '';
 
-  const parts = middle.split(SPLIT).map((p) => p.trim()).filter(Boolean);
-  if (parts.length >= 3) {
-    nick = parts[0];
-    faction = parts[1];
-    text = parts.slice(2).join(' ');
-  } else {
-    // Терпимый режим: «Ник [123] Фракция Текст».
-    const nm = /^(.*?\[\d+\])\s*(.*)$/.exec(middle);
-    if (!nm) return { skip: 'no-columns' };
-    nick = nm[1].trim();
-    const rest = nm[2];
+  if ((!tabs || mixed) && knownFactions.length) {
+    // В копии с пробелами разделитель может остаться внутри текста, а между полями исчезнуть.
     const restNorm = normFaction(rest);
     let best = '';
     for (const f of knownFactions) {
       const fn = normFaction(f);
       if (fn.length > best.length && (restNorm === fn || restNorm.startsWith(fn + ' '))) best = fn;
     }
-    if (!best) return { skip: 'no-faction' };
-    // отрезаем столько слов, сколько в названии фракции
-    const words = rest.trim().split(/\s+/);
-    const fw = best.split(' ').length;
-    faction = words.slice(0, fw).join(' ');
-    text = words.slice(fw).join(' ');
+    if (best && normFaction(faction) !== best) {
+      const words = rest.split(/\s+/);
+      const fw = best.split(' ').length;
+      faction = words.slice(0, fw).join(' ');
+      text = words.slice(fw).join(' ');
+    }
   }
 
-  const nk = NICK.exec(nick);
-  if (!nk) return { skip: 'no-static' };
+  if (!faction) return { skip: 'no-faction' };
   const isSystem = nk[1].trim().toUpperCase() === 'SYSTEM';
   text = text.replace(/\s+/g, ' ').trim();
   if (!text) return { skip: 'no-text' };
 
   const [, d, mo, y, h, mi, s] = dm;
   const ts = Date.UTC(+y, +mo - 1, +d, +h, +mi, s ? +s : 0);
-  if (Number.isNaN(ts)) return { skip: 'bad-date' };
+  if (+h > 23 || +mi > 59 || +(s ?? 0) > 59 || new Date(ts).getUTCMonth() !== +mo - 1) return { skip: 'bad-date' };
 
   return {
     line: {
@@ -154,7 +153,7 @@ export function parseLog(
   text: string,
   opts: { knownFactions?: string[]; file?: number; onProgress?: (done: number, total: number) => void; chunk?: number } = {},
 ): { lines: LogLine[]; stats: ParseStats } {
-  const rows = text.split('\n');
+  const rows = text.split(ROW_SEPARATOR);
   const lines: LogLine[] = [];
   const examples: string[] = [];
   let skipped = 0;
